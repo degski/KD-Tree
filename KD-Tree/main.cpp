@@ -339,8 +339,8 @@ void construct_kdtree ( Tree & tree_, Points points_ ) noexcept {
 
 
 template<typename T>
-[[ nodiscard ]] T distance_squared ( const sf::Vector2<T> & p1, const sf::Vector2<T> & p2 ) noexcept {
-    return ( ( p1.x - p2.x ) * ( p1.x - p2.x ) ) + ( ( p1.y - p2.y ) * ( p1.y - p2.y ) );
+[[ nodiscard ]] T distance_squared ( const sf::Vector2<T> & p1_, const sf::Vector2<T> & p2_ ) noexcept {
+    return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
 }
 
 
@@ -385,18 +385,28 @@ void find_nearest (
 template<typename T, std::size_t N, typename Int = std::int32_t>
 struct Imp2DTree {
 
-    using container = std::array<T, N>;
+    using base_type = decltype ( T { }.x );
     using value_type = T;
-    using pointer = T * ;
-    using reference = T & ;
+    using pointer = T *;
+    using reference = T &;
     using const_pointer = T const *;
     using const_reference = T const &;
+
+    using container = std::array<T, N>;
     using iterator = typename container::iterator;
     using const_iterator = typename container::const_iterator;
 
     private:
 
-    void construct ( const pointer node_, iterator first_, iterator last_, const bool x_dim_ ) noexcept {
+    [[ nodiscard ]] base_type distance_squared ( const T & p1_, const T & p2_ ) noexcept {
+        return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
+    }
+    [[ nodiscard ]] base_type distance_squared ( const T & p1_, const pointer p2_ ) noexcept {
+        return ( ( p1_.x - p2_->x ) * ( p1_.x - p2_->x ) ) + ( ( p1_.y - p2_->y ) * ( p1_.y - p2_->y ) );
+    }
+
+    template<typename ForwardIt>
+    void construct ( const pointer node_, ForwardIt first_, ForwardIt last_, const bool x_dim_ ) noexcept {
         if ( first_ == last_ ) {
             return;
         }
@@ -406,7 +416,7 @@ struct Imp2DTree {
         else {
             std::sort ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         }
-        const iterator median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        const ForwardIt median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         *node_ = *median;
         construct ( left ( node_ ), first_, median, not ( x_dim_ ) );
         construct ( right ( node_ ), std::next ( median ), last_, not ( x_dim_ ) );
@@ -463,7 +473,7 @@ struct Imp2DTree {
         return ( i_ - 1 ) / 2;
     }
 
-    [[ nodiscard ]] static constexpr bool is_leaf ( const pointer p_ ) noexcept {
+    [[ nodiscard ]] bool is_leaf ( const pointer p_ ) noexcept {
         assert ( N >= ( p_ - m_data.data ( ) ) );
         return ( p_ - m_data.data ( ) ) / ( N / 2 );
     }
@@ -472,17 +482,17 @@ struct Imp2DTree {
         return i_ / ( N / 2 );
     }
 
-    void find_nearest ( const pointer node_, const Point point_, Point & closest_, T & min_dist_, const bool x_dim_ ) const noexcept {
+    void find_nearest ( const pointer node_, const Point point_, Point & closest_, base_type & min_dist_, const bool x_dim_ ) const noexcept {
 
         if ( is_leaf ( node_ ) ) {
-            const T dist = distance_squared ( point_, * node );
+            const base_type dist = distance_squared ( point_, node_ );
             if ( dist < min_dist_ ) {
-                closest_ = * node;
+                closest_ = * node_;
                 min_dist_ = dist;
             }
         }
         else {
-            const T value { x_dim_ ? point_.x : point_.y }, pivot { x_dim_ ? tree_ [ node_ ].data.x : tree_ [ node_ ].data.y };
+            const base_type value { x_dim_ ? point_.x : point_.y }, pivot { x_dim_ ? ( *node_ ).x : ( *node_ ).y };
             if ( value < pivot ) {
                 // Search left first.
                 find_nearest ( left ( node_ ), point_, closest_, min_dist_, not ( x_dim_ ) );
@@ -534,21 +544,13 @@ Int wmain ( ) {
     std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
 
     for ( auto p : points ) {
-        std::cout << '<' << p.x << ' ' << p.y << '>';
+        std::cout << p;
     }
     std::cout << nl;
 
-    Imp2DTree<Point, bin_tree_size ( 6 )> tree ( { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } } );
+    Imp2DTree<Point, bin_tree_size ( 6 )> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << tree << nl;
-
-    std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::is_leaf ( 0 ) << nl;
-    std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::is_leaf ( 1 ) << nl;
-    std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::is_leaf ( 2 ) << nl;
-    std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::is_leaf ( 3 ) << nl;
-    std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::is_leaf ( 4 ) << nl;
-    std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::is_leaf ( 5 ) << nl;
-    std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::is_leaf ( 6 ) << nl;
 
     return EXIT_SUCCESS;
 }
