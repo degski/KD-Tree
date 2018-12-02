@@ -405,8 +405,8 @@ struct Imp2DTree {
         return distance_squared ( p1_, *p2_ );
     }
 
-    template<typename ForwardIt>
-    void construct ( const pointer node_, ForwardIt first_, ForwardIt last_, const bool x_dim_ ) noexcept {
+    template<typename RandomIt>
+    void construct ( const pointer node_, RandomIt first_, RandomIt last_, const bool x_dim_ ) noexcept {
         if ( first_ == last_ ) {
             return;
         }
@@ -416,7 +416,7 @@ struct Imp2DTree {
         else {
             std::sort ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         }
-        const ForwardIt median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        const RandomIt median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         *node_ = *median;
         construct ( left  ( node_ ),               first_, median, not ( x_dim_ ) );
         construct ( right ( node_ ), std::next ( median ),  last_, not ( x_dim_ ) );
@@ -548,7 +548,7 @@ Int wmain ( ) {
     }
     std::cout << nl;
 
-    Imp2DTree<Point, bin_tree_size ( 6 )> tree ( std::begin ( points ), std::end ( points ) );
+    Imp2DTree<Point, bin_tree_size ( 7 )> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << tree << nl;
 
