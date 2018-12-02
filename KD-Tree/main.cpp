@@ -350,30 +350,30 @@ void find_nearest (
     typename Tree::NodeID node_,
     const Point & point_,                      // Looking for closest node to this point.
     Point & closest_,   // Closest node (so far).
-    T & min_dist_,
+    T & min_distance_,
     const bool x_dim_ ) noexcept {
 
     if ( tree_.isLeaf ( node_ ) ) {
         const T dist = distance_squared ( point_, tree_ [ node_ ].data );
-        if ( dist < min_dist_ ) {
+        if ( dist < min_distance_ ) {
             closest_ = tree_ [ node_ ].data;
-            min_dist_ = dist;
+            min_distance_ = dist;
         }
     }
     else {
         const T value { x_dim_ ? point_.x : point_.y }, pivot { x_dim_ ? tree_ [ node_ ].data.x : tree_ [ node_ ].data.y };
         if ( value < pivot ) {
             // Search left first.
-            find_nearest ( tree_, tree_ [ node_ ].left, point_, closest_, min_dist_, not ( x_dim_ ) );
-            if ( value + min_dist_ >= pivot ) {
-                find_nearest ( tree_, tree_ [ node_ ].right, point_, closest_, min_dist_, not ( x_dim_ ) );
+            find_nearest ( tree_, tree_ [ node_ ].left, point_, closest_, min_distance_, not ( x_dim_ ) );
+            if ( value + min_distance_ >= pivot ) {
+                find_nearest ( tree_, tree_ [ node_ ].right, point_, closest_, min_distance_, not ( x_dim_ ) );
             }
         }
         else {
             // Search right first.
-            find_nearest ( tree_, tree_ [ node_ ].right, point_, closest_, min_dist_, not ( x_dim_ ) );
-            if ( value - min_dist_ <= pivot ) {
-                find_nearest ( tree_, tree_ [ node_ ].left, point_, closest_, min_dist_, not ( x_dim_ ) );
+            find_nearest ( tree_, tree_ [ node_ ].right, point_, closest_, min_distance_, not ( x_dim_ ) );
+            if ( value - min_distance_ <= pivot ) {
+                find_nearest ( tree_, tree_ [ node_ ].left, point_, closest_, min_distance_, not ( x_dim_ ) );
             }
         }
     }
@@ -402,7 +402,7 @@ struct Imp2DTree {
         return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
     }
     [[ nodiscard ]] base_type distance_squared ( const T & p1_, const pointer p2_ ) noexcept {
-        return ( ( p1_.x - p2_->x ) * ( p1_.x - p2_->x ) ) + ( ( p1_.y - p2_->y ) * ( p1_.y - p2_->y ) );
+        return distance_squared ( p1_, *p2_ );
     }
 
     template<typename ForwardIt>
@@ -418,8 +418,8 @@ struct Imp2DTree {
         }
         const ForwardIt median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         *node_ = *median;
-        construct ( left ( node_ ), first_, median, not ( x_dim_ ) );
-        construct ( right ( node_ ), std::next ( median ), last_, not ( x_dim_ ) );
+        construct ( left  ( node_ ),               first_, median, not ( x_dim_ ) );
+        construct ( right ( node_ ), std::next ( median ),  last_, not ( x_dim_ ) );
     }
 
     container m_data;
@@ -482,29 +482,29 @@ struct Imp2DTree {
         return i_ / ( N / 2 );
     }
 
-    void find_nearest ( const pointer node_, const Point point_, Point & closest_, base_type & min_dist_, const bool x_dim_ ) const noexcept {
+    void find_nearest ( const pointer node_, const Point point_, Point & closest_, base_type & min_distance_, const bool x_dim_ ) const noexcept {
 
         if ( is_leaf ( node_ ) ) {
-            const base_type dist = distance_squared ( point_, node_ );
-            if ( dist < min_dist_ ) {
+            const base_type distance = distance_squared ( point_, node_ );
+            if ( distance < min_distance_ ) {
                 closest_ = * node_;
-                min_dist_ = dist;
+                min_distance_ = distance;
             }
         }
         else {
-            const base_type value { x_dim_ ? point_.x : point_.y }, pivot { x_dim_ ? ( *node_ ).x : ( *node_ ).y };
+            const base_type value { x_dim_ ? point_.x : point_.y }, pivot { x_dim_ ? node_->x : node_->y };
             if ( value < pivot ) {
                 // Search left first.
-                find_nearest ( left ( node_ ), point_, closest_, min_dist_, not ( x_dim_ ) );
-                if ( value + min_dist_ >= pivot ) {
-                    find_nearest ( right ( node_ ), point_, closest_, min_dist_, not ( x_dim_ ) );
+                find_nearest ( left ( node_ ), point_, closest_, min_distance_, not ( x_dim_ ) );
+                if ( value + min_distance_ >= pivot ) {
+                    find_nearest ( right ( node_ ), point_, closest_, min_distance_, not ( x_dim_ ) );
                 }
             }
             else {
                 // Search right first.
-                find_nearest ( right ( node_ ), point_, closest_, min_dist_, not ( x_dim_ ) );
-                if ( value - min_dist_ <= pivot ) {
-                    find_nearest ( left ( node_ ), point_, closest_, min_dist_, not ( x_dim_ ) );
+                find_nearest ( right ( node_ ), point_, closest_, min_distance_, not ( x_dim_ ) );
+                if ( value - min_distance_ <= pivot ) {
+                    find_nearest ( left ( node_ ), point_, closest_, min_distance_, not ( x_dim_ ) );
                 }
             }
         }
