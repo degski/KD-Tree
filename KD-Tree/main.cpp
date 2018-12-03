@@ -401,13 +401,6 @@ struct Imp2DTree {
 
     private:
 
-    [[ nodiscard ]] base_type distance_squared ( const T & p1_, const T & p2_ ) noexcept {
-        return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
-    }
-    [[ nodiscard ]] base_type distance_squared ( const T & p1_, const pointer p2_ ) noexcept {
-        return distance_squared ( p1_, *p2_ );
-    }
-
     template<typename RandomIt>
     void construct ( const pointer node_, RandomIt first_, RandomIt last_, const bool x_dim_ ) noexcept {
         if ( first_ == last_ ) {
@@ -476,7 +469,11 @@ struct Imp2DTree {
         return ( i_ - 1 ) / 2;
     }
 
-    [[ nodiscard ]] bool is_leaf ( const pointer p_ ) noexcept {
+    [[ nodiscard ]] bool is_leaf ( pointer p_ ) const noexcept {
+        assert ( N >= ( p_ - m_data.data ( ) ) );
+        return ( p_ - m_data.data ( ) ) / ( N / 2 );
+    }
+    [[ nodiscard ]] bool is_leaf ( const_pointer p_ ) const noexcept {
         assert ( N >= ( p_ - m_data.data ( ) ) );
         return ( p_ - m_data.data ( ) ) / ( N / 2 );
     }
@@ -485,33 +482,61 @@ struct Imp2DTree {
         return i_ / ( N / 2 );
     }
 
-    void find_nearest ( const pointer node_, const Point point_, Point & closest_, base_type & min_distance_, const bool x_dim_ ) const noexcept {
+    [[ nodiscard ]] static base_type distance_squared ( const T & p1_, const T & p2_ ) noexcept {
+        return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
+    }
+    [[ nodiscard ]] static base_type distance_squared ( const T & p1_, const_pointer p2_ ) noexcept {
+        return distance_squared ( p1_, *p2_ );
+    }
 
+    private:
+
+    struct Nearest {
+
+        Point point, found;
+        base_type min_distance;
+
+        Nearest ( const Point & point_ ) noexcept :
+            point { point_ },
+            found { },
+            min_distance { std::numeric_limits<base_type>::max ( ) } {
+        }
+    };
+
+    void find_nearest_impl ( const const_pointer node_, const bool x_dim_, Nearest & nearest_ ) const noexcept {
         if ( is_leaf ( node_ ) ) {
-            const base_type distance = distance_squared ( point_, node_ );
-            if ( distance < min_distance_ ) {
-                closest_ = * node_;
-                min_distance_ = distance;
+            const base_type distance = Imp2DTree::distance_squared ( nearest_.point, node_ );
+            if ( distance < nearest_.min_distance ) {
+                nearest_.found = * node_;
+                nearest_.min_distance = distance;
             }
         }
         else {
-            const base_type value { x_dim_ ? point_.x : point_.y }, pivot { x_dim_ ? node_->x : node_->y };
-            if ( value < pivot ) {
-                // Search left first.
-                find_nearest ( left ( node_ ), point_, closest_, min_distance_, not ( x_dim_ ) );
-                if ( value + min_distance_ >= pivot ) {
-                    find_nearest ( right ( node_ ), point_, closest_, min_distance_, not ( x_dim_ ) );
+            const base_type value { x_dim_ ? nearest_.point.x : nearest_.point.y }, pivot { x_dim_ ? node_->x : node_->y };
+            if ( value < pivot ) { // Search left first.
+                find_nearest_impl ( left ( node_ ), not ( x_dim_ ), nearest_ );
+                if ( value + nearest_.min_distance >= pivot ) {
+                    find_nearest_impl ( right ( node_ ), not ( x_dim_ ), nearest_ );
                 }
             }
-            else {
-                // Search right first.
-                find_nearest ( right ( node_ ), point_, closest_, min_distance_, not ( x_dim_ ) );
-                if ( value - min_distance_ <= pivot ) {
-                    find_nearest ( left ( node_ ), point_, closest_, min_distance_, not ( x_dim_ ) );
+            else { // Search right first.
+                find_nearest_impl ( right ( node_ ), not ( x_dim_ ), nearest_ );
+                if ( value - nearest_.min_distance <= pivot ) {
+                    find_nearest_impl ( left ( node_ ), not ( x_dim_ ), nearest_ );
                 }
             }
         }
     }
+
+    public:
+
+    [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
+        Nearest nearest { point_ };
+        find_nearest_impl ( m_data.data ( ), true, nearest );
+        std::cout << nearest.min_distance << ' ';
+        return nearest.found;
+    }
+
 
     template<typename Stream>
     [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const Imp2DTree & tree_ ) noexcept {
@@ -544,16 +569,27 @@ struct Imp2DTree {
 
 Int wmain ( ) {
 
-    std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    Imp2DTree<Point, bin_tree_size ( 7 )> tree ( std::begin ( points ), std::end ( points ) );
+    Imp2DTree<Point, bin_tree_size ( 13 )> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << tree << nl;
+
+    Point ptf { 6, 5 };
+
+    std::cout << tree.find_nearest ( ptf ) << nl;
+
+    std::cout << nl;
+
+    for ( auto p : points ) {
+        std::cout << Imp2DTree<Point, bin_tree_size ( 13 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
+    }
 
     return EXIT_SUCCESS;
 }
