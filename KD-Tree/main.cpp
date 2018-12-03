@@ -385,6 +385,9 @@ void find_nearest (
 template<typename T, std::size_t N, typename Int = std::int32_t>
 struct Imp2DTree {
 
+    // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
+
+
     using base_type = decltype ( T { }.x );
     using value_type = T;
     using pointer = T *;
