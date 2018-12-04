@@ -148,3 +148,31 @@ template<typename T>
 }
 
 }
+
+
+/*
+
+http://lith.me/code/2015/06/08/Nearest-Neighbor-Search-with-KDTree
+
+private static Node findNearest(final Node current, final Node target, final int depth) {
+        final int axis = depth % K;
+        final int direction = getComparator(axis).compare(target, current);
+        final Node next = (direction < 0) ? current.left : current.right;
+        final Node other = (direction < 0) ? current.right : current.left;
+        Node best = (next == null) ? current : findNearest(next, target, depth + 1);
+        if (current.euclideanDistance(target) < best.euclideanDistance(target)) {
+            best = current;
+        }
+        if (other != null) {
+            if (current.verticalDistance(target, axis) < best.euclideanDistance(target)) {
+                final Node possibleBest = findNearest(other, target, depth + 1);
+                if (possibleBest.euclideanDistance(target) < best.euclideanDistance(target)) {
+                    best = possibleBest;
+                }
+            }
+        }
+        return best;
+    }
+
+
+*/
