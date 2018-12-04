@@ -175,4 +175,28 @@ private static Node findNearest(final Node current, final Node target, final int
     }
 
 
+http://www.howtobuildsoftware.com/index.php/how-do/bokQ/java-algorithm-search-nearest-neighbor-kdtree-2d-kd-tree-and-nearest-neighbour-search
+
+    bestDistance = INF
+
+def getClosest(node, point)
+    if node is null
+        return
+    // I will assume that this node splits points
+    // by their x coordinate for the sake of brevity.
+    if node is a leaf
+        // updateAnswer updates bestDistance value
+        // and keeps track of the closest point to the given one.
+        updateAnswer(node.point, point)
+    else
+        middleX = node.median
+        if point.x < middleX
+            getClosest(node.left, point)
+            if node.right.minX - point.x < bestDistance
+                getClosest(node.right, point)
+        else
+            getClosest(node.right, point)
+            if point.x - node.left.maxX < bestDistance
+                getClosest(node.left, point)
+
 */
