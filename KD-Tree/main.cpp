@@ -380,6 +380,19 @@ void find_nearest (
 }
 
 
+struct KDTreePoint {
+    Point point, min_max;
+    using base_type = decltype ( point.x );
+
+    KDTreePoint ( ) {
+    }
+    KDTreePoint ( Point && p_ ) noexcept :
+        point ( std::move ( p_ ) ) {
+    }
+    KDTreePoint ( Point && p_, Point && mm_ ) noexcept :
+        point ( std::move ( p_ ) ), min_max ( std::move ( mm_ ) ) {
+    }
+};
 
 // Implicit full binary tree of size N.
 template<typename T, std::size_t N, typename Int = std::int32_t>
@@ -388,7 +401,7 @@ struct Imp2DTree {
     // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
 
 
-    using base_type = decltype ( T { }.x );
+    using base_type = typename KDTreePoint::base_type;
     using value_type = T;
     using pointer = T *;
     using reference = T &;
@@ -413,7 +426,7 @@ struct Imp2DTree {
             std::sort ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         }
         const RandomIt median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
-        *node_ = *median;
+        (*node_).point = *median;
         construct ( left  ( node_ ),               first_, median, not ( x_dim_ ) );
         construct ( right ( node_ ), std::next ( median ),  last_, not ( x_dim_ ) );
     }
@@ -447,7 +460,7 @@ struct Imp2DTree {
         return p_ + ( p_ - m_data.data ( ) ) + 2;
     }
     [[ nodiscard ]] constexpr pointer parent ( const pointer p_ ) const noexcept {
-        return m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2;
+        return m_data.data ( ) + ( ( p_ - m_data.data ( ) ) - 1 ) / 2;
     }
     [[ nodiscard ]] constexpr const_pointer left ( const const_pointer p_ ) const noexcept {
         return p_ + ( p_ - m_data.data ( ) ) + 1;
@@ -456,7 +469,7 @@ struct Imp2DTree {
         return p_ + ( p_ - m_data.data ( ) ) + 2;
     }
     [[ nodiscard ]] constexpr const_pointer parent ( const const_pointer p_ ) const noexcept {
-        return m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2;
+        return m_data.data ( ) + ( ( p_ - m_data.data ( ) ) - 1 ) / 2;
     }
 
     [[ nodiscard ]] constexpr Int left ( const Int i_ ) const noexcept {
@@ -482,11 +495,11 @@ struct Imp2DTree {
         return i_ / ( N / 2 );
     }
 
-    [[ nodiscard ]] static base_type distance_squared ( const T & p1_, const T & p2_ ) noexcept {
+    [[ nodiscard ]] static base_type distance_squared ( const Point & p1_, const Point & p2_ ) noexcept {
         return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
     }
-    [[ nodiscard ]] static base_type distance_squared ( const T & p1_, const_pointer p2_ ) noexcept {
-        return distance_squared ( p1_, *p2_ );
+    [[ nodiscard ]] static base_type distance_squared ( const Point & p1_, const_pointer p2_ ) noexcept {
+        return distance_squared ( p1_, p2_->point );
     }
 
     private:
@@ -507,12 +520,12 @@ struct Imp2DTree {
         if ( is_leaf ( node_ ) ) {
             const base_type distance = Imp2DTree::distance_squared ( nearest_.point, node_ );
             if ( distance < nearest_.min_distance ) {
-                nearest_.found = * node_;
+                nearest_.found = ( * node_ ).point;
                 nearest_.min_distance = distance;
             }
         }
         else {
-            const base_type value { x_dim_ ? nearest_.point.x : nearest_.point.y }, pivot { x_dim_ ? node_->x : node_->y };
+            const base_type value { x_dim_ ? nearest_.point.x : nearest_.point.y }, pivot { x_dim_ ? node_->point.x : node_->point.y };
             if ( value < pivot ) { // Search left first.
                 find_nearest_impl ( left ( node_ ), not ( x_dim_ ), nearest_ );
                 if ( value + nearest_.min_distance >= pivot ) {
@@ -541,7 +554,7 @@ struct Imp2DTree {
     template<typename Stream>
     [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const Imp2DTree & tree_ ) noexcept {
         for ( const auto p : tree_.m_data ) {
-            out_ << p;
+            out_ << p.point;
         }
         return out_;
     }
@@ -569,15 +582,15 @@ struct Imp2DTree {
 
 Int wmain ( ) {
 
-    // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    // std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    Imp2DTree<Point, bin_tree_size ( 13 )> tree ( std::begin ( points ), std::end ( points ) );
+    Imp2DTree<KDTreePoint, bin_tree_size ( 6 )> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << tree << nl;
 
@@ -588,7 +601,7 @@ Int wmain ( ) {
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << Imp2DTree<Point, bin_tree_size ( 13 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
