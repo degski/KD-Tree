@@ -367,12 +367,19 @@ struct Imp2DTree {
         assert ( il_.size ( ) <= N );
         container points;
         std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
-        construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), true );
+        construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), pick_dimension ( std::begin ( points ), std::begin ( points ) + il_.size ( ) ) );
     }
     template<typename ForwardIt>
     Imp2DTree ( ForwardIt first_, ForwardIt last_ ) noexcept {
         assert ( ( last_ - first_ ) <= N );
-        construct ( m_data.data ( ), first_, last_, true );
+        construct ( m_data.data ( ), first_, last_, pick_dimension ( first_, last_ ) );
+    }
+
+    template<typename ForwardIt>
+    [[ nodiscard ]] bool pick_dimension ( ForwardIt first_, ForwardIt last_ ) const noexcept {
+        const auto x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
+        const auto y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
+        return ( x.second->x - x.first->x ) > ( y.second->y - y.first->y );
     }
 
     [[ nodiscard ]] constexpr pointer left ( const pointer p_ ) const noexcept {
@@ -438,7 +445,6 @@ struct Imp2DTree {
         return *nearest.found;
     }
 
-
     template<typename Stream>
     [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const Imp2DTree & tree_ ) noexcept {
         for ( const auto p : tree_.m_data ) {
@@ -471,8 +477,8 @@ struct Imp2DTree {
 Int wmain ( ) {
 
     splitmix64 rng;
-    std::uniform_real_distribution<float> disx { 0.0f, 100.0f };
-    std::uniform_real_distribution<float> disy { 0.0f, 40.0f };
+    std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
+    std::uniform_real_distribution<float> disx { 0.0f, 40.0f };
 
     plf::nanotimer timer;
     double st;
