@@ -44,6 +44,8 @@
 namespace fs = std::filesystem;
 
 #include <SFML/System.hpp>
+#include <splitmix.hpp>
+#include <plf/plf_nanotimer.h>
 
 using Point = sf::Vector2f;
 
@@ -379,40 +381,16 @@ struct Imp2DTree {
     [[ nodiscard ]] constexpr pointer right ( const pointer p_ ) const noexcept {
         return p_ + ( p_ - m_data.data ( ) ) + 2;
     }
-    [[ nodiscard ]] constexpr pointer parent ( const pointer p_ ) const noexcept {
-        return m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2;
-    }
     [[ nodiscard ]] constexpr const_pointer left ( const const_pointer p_ ) const noexcept {
         return p_ + ( p_ - m_data.data ( ) ) + 1;
     }
     [[ nodiscard ]] constexpr const_pointer right ( const const_pointer p_ ) const noexcept {
         return p_ + ( p_ - m_data.data ( ) ) + 2;
     }
-    [[ nodiscard ]] constexpr const_pointer parent ( const const_pointer p_ ) const noexcept {
-        return m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2;
-    }
 
-    [[ nodiscard ]] constexpr Int left ( const Int i_ ) const noexcept {
-        return 2 * i_ + 1;
-    }
-    [[ nodiscard ]] constexpr Int right ( const Int i_ ) const noexcept {
-        return 2 * i_ + 2;
-    }
-    [[ nodiscard ]] constexpr Int parent ( const Int i_ ) const noexcept {
-        return ( i_ - 1 ) / 2;
-    }
-
-    [[ nodiscard ]] bool is_leaf ( pointer p_ ) const noexcept {
-        assert ( N >= ( p_ - m_data.data ( ) ) );
-        return ( p_ - m_data.data ( ) ) / ( N / 2 );
-    }
     [[ nodiscard ]] bool is_leaf ( const_pointer p_ ) const noexcept {
         assert ( N >= ( p_ - m_data.data ( ) ) );
         return ( p_ - m_data.data ( ) ) / ( N / 2 );
-    }
-    [[ nodiscard ]] static constexpr bool is_leaf ( const Int i_ ) noexcept {
-        assert ( N >= i_ );
-        return i_ / ( N / 2 );
     }
 
     [[ nodiscard ]] static base_type distance_squared ( const Point & p1_, const Point & p2_ ) noexcept {
@@ -491,6 +469,43 @@ struct Imp2DTree {
 
 
 Int wmain ( ) {
+
+    splitmix64 rng;
+    std::uniform_real_distribution<float> disx { 0.0f, 100.0f };
+    std::uniform_real_distribution<float> disy { 0.0f, 40.0f };
+
+    plf::nanotimer timer;
+    double st;
+
+    constexpr int n = 10'000;
+
+    std::vector<Point> points;
+
+    for ( int i = 0; i < n; ++i ) {
+        points.emplace_back ( disx ( rng ), disy ( rng ) );
+    }
+
+    timer.start ( );
+
+    Imp2DTree<Point, bin_tree_size ( n )> tree ( std::begin ( points ), std::end ( points ) );
+
+    std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+    Point ptf { 60.0f, 20.5f };
+
+    timer.start ( );
+
+    const auto found = tree.find_nearest ( ptf );
+
+    std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+    std::cout << nl << "nearest " << found << nl;
+
+    return EXIT_SUCCESS;
+}
+
+
+Int wmain6786787 ( ) {
 
     // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
