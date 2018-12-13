@@ -388,16 +388,43 @@ struct Imp2DTree {
     [[ nodiscard ]] constexpr pointer right ( const pointer p_ ) const noexcept {
         return p_ + ( p_ - m_data.data ( ) ) + 2;
     }
+    [[ nodiscard ]] constexpr pointer parent ( const pointer p_ ) const noexcept {
+        return m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2;
+    }
     [[ nodiscard ]] constexpr const_pointer left ( const const_pointer p_ ) const noexcept {
         return p_ + ( p_ - m_data.data ( ) ) + 1;
     }
     [[ nodiscard ]] constexpr const_pointer right ( const const_pointer p_ ) const noexcept {
         return p_ + ( p_ - m_data.data ( ) ) + 2;
     }
+    [[ nodiscard ]] constexpr const_pointer parent ( const const_pointer p_ ) const noexcept {
+        return m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2;
+    }
+    [[ nodiscard ]] constexpr Int left ( const Int i_ ) const noexcept {
+        return 2 * i_ + 1;
+    }
+    [[ nodiscard ]] constexpr Int right ( const Int i_ ) const noexcept {
+        return 2 * i_ + 2;
+    }
+    [[ nodiscard ]] constexpr Int parent ( const Int i_ ) const noexcept {
+        return ( i_ - 1 ) / 2;
+    }
 
+    [[ nodiscard ]] bool is_leaf ( pointer p_ ) const noexcept {
+        assert ( N >= ( p_ - m_data.data ( ) ) );
+        return ( p_ - m_data.data ( ) ) / ( N / 2 );
+    }
     [[ nodiscard ]] bool is_leaf ( const_pointer p_ ) const noexcept {
         assert ( N >= ( p_ - m_data.data ( ) ) );
         return ( p_ - m_data.data ( ) ) / ( N / 2 );
+    }
+    [[ nodiscard ]] static constexpr bool is_leaf ( const Int i_ ) noexcept {
+        assert ( N >= i_ );
+        return i_ / ( N / 2 );
+    }
+    [[ nodiscard ]] static constexpr bool is_leaf ( const std::size_t i_ ) noexcept {
+        assert ( N >= i_ );
+        return i_ / ( N / 2 );
     }
 
     [[ nodiscard ]] static base_type distance_squared ( const Point & p1_, const Point & p2_ ) noexcept {
@@ -420,13 +447,13 @@ struct Imp2DTree {
     };
 
     void nearest_impl ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
-        if ( is_leaf ( p_ ) ) {
-            return;
-        }
         const float d = Imp2DTree::distance_squared ( n_.point, *p_ );
         if ( d < n_.min_distance ) {
             n_.min_distance = d;
             n_.found = p_;
+        }
+        if ( is_leaf ( p_ ) ) {
+            return;
         }
         const float dx = dim_ ? p_->x - n_.point.x : p_->y - n_.point.y;
         dim_ = not ( dim_ );
@@ -435,6 +462,27 @@ struct Imp2DTree {
             return;
         }
         nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
+    }
+
+    void nns ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
+        std::size_t level_start { 1u }, level_index { 0u };
+        do {
+            std::size_t node = level_start + level_index - 1;
+            if ( is_leaf ( node ) ) {
+                std::cout << "leaf " << m_data [ node ] << '\n';
+            }
+            else {
+                std::cout << "itnl " << m_data [ node ] << '\n';
+                level_start <<= 1;
+                level_index <<= 1;
+                continue;
+            }
+            ++level_index;
+            const int up = __builtin_ctzll ( level_index );
+            level_start >>= up;
+            level_index >>= up;
+
+        } while ( level_start > 1u );
     }
 
     public:
@@ -473,8 +521,7 @@ struct Imp2DTree {
 }
 
 
-
-Int wmain ( ) {
+Int wmain678766867 ( ) {
 
     splitmix64 rng;
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
@@ -483,7 +530,7 @@ Int wmain ( ) {
     plf::nanotimer timer;
     double st;
 
-    constexpr int n = 10'000;
+    constexpr int n = 1'000;
 
     std::vector<Point> points;
 
@@ -511,28 +558,28 @@ Int wmain ( ) {
 }
 
 
-Int wmain6786787 ( ) {
+Int wmain ( ) {
 
-    // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    // std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    Imp2DTree<Point, bin_tree_size ( 13 )> tree ( std::begin ( points ), std::end ( points ) );
+    Imp2DTree<Point, bin_tree_size ( 6 )> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << nl << tree << nl << nl;
 
-    Point ptf { 6, 2 };
+    Point ptf { 4.1f, 6.9f };
 
-    std::cout << nl << nl << "nearest " << tree.find_nearest ( ptf ) << nl;
+    std::cout << nl << nl << "nearest " << nl << tree.find_nearest ( ptf ) << nl;
 
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << Imp2DTree<Point, bin_tree_size ( 13 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
