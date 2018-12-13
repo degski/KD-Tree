@@ -350,6 +350,9 @@ struct Imp2DTree {
         }
         *node_ = *median;
         construct ( left  ( node_ ),               first_, median, not ( x_dim_ ) );
+        if ( 1 == std::distance ( first_, median ) ) {
+            *right ( node_ ) = Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) };
+        }
         construct ( right ( node_ ), std::next ( median ),  last_, not ( x_dim_ ) );
     }
 
@@ -367,13 +370,11 @@ struct Imp2DTree {
         assert ( il_.size ( ) <= N );
         container points;
         std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
-        std::fill ( std::begin ( m_data ), std::end ( m_data ), Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
         construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), pick_dimension ( std::begin ( points ), std::begin ( points ) + il_.size ( ) ) );
     }
     template<typename ForwardIt>
     Imp2DTree ( ForwardIt first_, ForwardIt last_ ) noexcept {
         assert ( ( last_ - first_ ) <= N );
-        std::fill ( std::begin ( m_data ), std::end ( m_data ), Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
         construct ( m_data.data ( ), first_, last_, pick_dimension ( first_, last_ ) );
     }
 
@@ -525,6 +526,7 @@ struct Imp2DTree {
 
         } while ( level_start > 1u );
     }
+
     public:
 
     [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
@@ -600,15 +602,15 @@ Int wmain678766867 ( ) {
 
 Int wmain ( ) {
 
-    // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    // std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    Imp2DTree<Point, bin_tree_size ( 13 )> tree ( std::begin ( points ), std::end ( points ) );
+    Imp2DTree<Point, bin_tree_size ( 6 )> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << nl << tree << nl << nl;
 
@@ -619,7 +621,7 @@ Int wmain ( ) {
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << Imp2DTree<Point, bin_tree_size ( 13 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
