@@ -351,7 +351,7 @@ struct Imp2DTree {
         *node_ = *median;
         construct ( left  ( node_ ),               first_, median, not ( x_dim_ ) );
         if ( 1 == std::distance ( first_, median ) ) {
-            *right ( node_ ) = Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) };
+            *right ( node_ ) = Point { std::numeric_limits<base_type>::min ( ), std::numeric_limits<base_type>::min ( ) };
         }
         construct ( right ( node_ ), std::next ( median ),  last_, not ( x_dim_ ) );
     }
