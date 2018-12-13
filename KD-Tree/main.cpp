@@ -367,11 +367,13 @@ struct Imp2DTree {
         assert ( il_.size ( ) <= N );
         container points;
         std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
+        std::fill ( std::begin ( m_data ), std::end ( m_data ), Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
         construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), pick_dimension ( std::begin ( points ), std::begin ( points ) + il_.size ( ) ) );
     }
     template<typename ForwardIt>
     Imp2DTree ( ForwardIt first_, ForwardIt last_ ) noexcept {
         assert ( ( last_ - first_ ) <= N );
+        std::fill ( std::begin ( m_data ), std::end ( m_data ), Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
         construct ( m_data.data ( ), first_, last_, pick_dimension ( first_, last_ ) );
     }
 
@@ -467,7 +469,7 @@ struct Imp2DTree {
     void nns ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
         std::size_t level_start { 1u }, level_index { 0u };
         do {
-            std::size_t node = level_start + level_index - 1;
+            const std::size_t node = level_start + level_index - 1;
             if ( is_leaf ( node ) ) {
                 std::cout << "leaf " << m_data [ node ] << '\n';
             }
@@ -485,12 +487,49 @@ struct Imp2DTree {
         } while ( level_start > 1u );
     }
 
+    void nnsa ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
+        std::size_t level_start { 1u }, level_index { 0u }, level_index_dynamic { 0u };
+        static splitmix64 at_random;
+        static std::bernoulli_distribution select_right;
+        do {
+            const std::size_t node = level_start + level_index_dynamic - 1;
+            if ( is_leaf ( node ) ) {
+                std::cout << "leaf " << m_data [ node ] << '\n';
+            }
+            else {
+                std::cout << "itnl " << m_data [ node ] << '\n';
+                // test children of node
+                // if any accepted then
+                {
+                    level_start <<= 1;
+                    level_index <<= 1;
+                    level_index_dynamic <<= 1;
+                    // if right child ﬁrst then
+                    if ( select_right ( at_random ) ) {
+                        ++level_index_dynamic;
+                    }
+                    // if rejected one child then
+                    {
+                    //    ++level_index;
+                    }
+                    continue;
+                }
+            }
+            ++level_index;
+            const int up = __builtin_ctzll ( level_index );
+            level_start >>= up;
+            level_index >>= up;
+            level_index_dynamic >>= up;
+            level_index_dynamic += ( 1 - 2 * ( level_index_dynamic & std::size_t { 1 } ) );
+
+        } while ( level_start > 1u );
+    }
     public:
 
     [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
         Nearest nearest { point_ };
-        nearest_impl ( m_data.data ( ), nearest, true );
-        return *nearest.found;
+        nnsa ( m_data.data ( ), nearest, true );
+        return {};// *nearest.found;
     }
 
     template<typename Stream>
@@ -560,15 +599,15 @@ Int wmain678766867 ( ) {
 
 Int wmain ( ) {
 
-    std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    // std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    Imp2DTree<Point, bin_tree_size ( 6 )> tree ( std::begin ( points ), std::end ( points ) );
+    Imp2DTree<Point, bin_tree_size ( 13 )> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << nl << tree << nl << nl;
 
@@ -579,7 +618,7 @@ Int wmain ( ) {
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << Imp2DTree<Point, bin_tree_size ( 13 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
