@@ -504,6 +504,7 @@ struct Imp2DTree {
                     level_start <<= 1;
                     level_index <<= 1;
                     level_index_dynamic <<= 1;
+
                     // if right child ﬁrst then
                     if ( select_right ( at_random ) ) {
                         ++level_index_dynamic;
