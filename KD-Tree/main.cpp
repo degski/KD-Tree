@@ -357,6 +357,7 @@ struct Imp2DTree {
     }
 
     container m_data;
+    const std::size_t m_dim_mask;
 
     public:
 
@@ -365,17 +366,20 @@ struct Imp2DTree {
     Imp2DTree ( Imp2DTree && ) noexcept = delete;
     Imp2DTree ( const Imp2DTree & t_ ) noexcept {
         m_data = t_.m_data;
+        m_dim_mask = t_.m_dim_mask;
     }
-    Imp2DTree ( std::initializer_list<T> il_ ) noexcept {
+    Imp2DTree ( std::initializer_list<T> il_ ) noexcept :
+        m_dim_mask { pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) ? 0x5555'5555'5555'5555 : 0xAAAA'AAAA'AAAA'AAAA } {
         assert ( il_.size ( ) <= N );
         container points;
         std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
-        construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), pick_dimension ( std::begin ( points ), std::begin ( points ) + il_.size ( ) ) );
+        construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), dim ( 1u ) );
     }
     template<typename ForwardIt>
-    Imp2DTree ( ForwardIt first_, ForwardIt last_ ) noexcept {
+    Imp2DTree ( ForwardIt first_, ForwardIt last_ ) noexcept :
+        m_dim_mask { pick_dimension ( first_, last_ ) ? 0x5555'5555'5555'5555 : 0xAAAA'AAAA'AAAA'AAAA } {
         assert ( ( last_ - first_ ) <= N );
-        construct ( m_data.data ( ), first_, last_, pick_dimension ( first_, last_ ) );
+        construct ( m_data.data ( ), first_, last_, dim ( 1u ) );
     }
 
     template<typename ForwardIt>
@@ -423,11 +427,19 @@ struct Imp2DTree {
     }
     [[ nodiscard ]] static constexpr bool is_leaf ( const Int i_ ) noexcept {
         assert ( N >= i_ );
-        return i_ / ( N / 2 );
+        return i_ >= Int { N / 2 };
+    }
+    [[ nodiscard ]] static constexpr bool is_internal ( const Int i_ ) noexcept {
+        assert ( N >= i_ );
+        return i_ < Int { N / 2 };
     }
     [[ nodiscard ]] static constexpr bool is_leaf ( const std::size_t i_ ) noexcept {
         assert ( N >= i_ );
-        return i_ / ( N / 2 );
+        return i_ >= std::size_t { N / 2 };
+    }
+    [[ nodiscard ]] static constexpr bool is_internal ( const std::size_t i_ ) noexcept {
+        assert ( N >= i_ );
+        return i_ < std::size_t { N / 2 };
     }
 
     [[ nodiscard ]] static base_type distance_squared ( const Point & p1_, const Point & p2_ ) noexcept {
@@ -467,6 +479,56 @@ struct Imp2DTree {
         nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
     }
 
+    void nns_impl ( Nearest & n_ ) const noexcept {
+        std::size_t level_start { 1u }, level_index { 0u }, level_index_dynamic { 0u };\
+        do {
+            const std::size_t node = level_start + level_index_dynamic - 1;
+
+            const float dx = dim ( level_start ) ? m_data [ node ].x - n_.point.x : m_data [ node ].y - n_.point.y;
+            const bool left_first { dx > base_type { 0 } };
+
+            const float d = Imp2DTree::distance_squared ( n_.point, m_data [ node ] );
+            if ( d < n_.min_distance ) {
+                n_.min_distance = d;
+                n_.found = m_data.data ( ) + node;
+            }
+
+            if ( is_leaf ( node ) ) {
+                std::cout << "leaf " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
+            }
+            else {
+
+                std::cout << "itnl " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
+
+                // test children of node
+                // if any accepted then
+                {
+                    level_start <<= 1;
+                    level_index <<= 1;
+                    level_index_dynamic <<= 1;
+
+                    // if right child ﬁrst then
+                    if ( not ( left_first ) ) {
+                        ++level_index_dynamic;
+                    }
+                    // if rejected one child then
+                    //if ( ( dx * dx ) >= n_.min_distance ) {
+                    //    ++level_index;
+                     //   continue;
+                    //}
+                    continue;
+                }
+            }
+            ++level_index;
+            const int up = __builtin_ctzll ( level_index );
+            level_start >>= up;
+            level_index >>= up;
+            level_index_dynamic >>= up;
+            level_index_dynamic += ( 1 - 2 * ( level_index_dynamic & std::size_t { 1 } ) );
+
+        } while ( level_start > 1u );
+    }
+
     void nns ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
         std::size_t level_start { 1u }, level_index { 0u };
         do {
@@ -488,17 +550,21 @@ struct Imp2DTree {
         } while ( level_start > 1u );
     }
 
-    void nnsa ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
+    [[ nodiscard ]] bool dim ( const std::size_t level_start_ ) const noexcept {
+        return level_start_ & m_dim_mask;
+    }
+
+    void nnsa ( Nearest & n_ ) const noexcept {
         std::size_t level_start { 1u }, level_index { 0u }, level_index_dynamic { 0u };
         static splitmix64 at_random;
         static std::bernoulli_distribution select_right;
         do {
             const std::size_t node = level_start + level_index_dynamic - 1;
             if ( is_leaf ( node ) ) {
-                std::cout << "leaf " << m_data [ node ] << '\n';
+                std::cout << "leaf " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
             }
             else {
-                std::cout << "itnl " << m_data [ node ] << '\n';
+                std::cout << "itnl " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
                 // test children of node
                 // if any accepted then
                 {
@@ -531,7 +597,7 @@ struct Imp2DTree {
 
     [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
         Nearest nearest { point_ };
-        nnsa ( m_data.data ( ), nearest, true );
+        nns_impl ( nearest );
         return {};// *nearest.found;
     }
 
