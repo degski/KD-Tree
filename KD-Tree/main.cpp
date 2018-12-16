@@ -361,7 +361,6 @@ struct Imp2DTree {
 
     container m_data;
     const bool m_dim_start;
-    const std::size_t m_dim_mask;
 
     public:
 
@@ -370,22 +369,20 @@ struct Imp2DTree {
     Imp2DTree ( Imp2DTree && ) noexcept = delete;
     Imp2DTree ( const Imp2DTree & t_ ) noexcept {
         m_data = t_.m_data;
-        m_dim_mask = t_.m_dim_mask;
+        m_dim_start = t_.m_dim_start;
     }
     Imp2DTree ( std::initializer_list<T> il_ ) noexcept :
-        m_dim_start { pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) },
-        m_dim_mask { m_dim_start ? 0x5555'5555'5555'5555 : 0xAAAA'AAAA'AAAA'AAAA } {
+        m_dim_start { pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) } {
         assert ( il_.size ( ) <= N );
         container points;
         std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
-        construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), dim ( 1u ) );
+        construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), m_dim_start );
     }
     template<typename ForwardIt>
     Imp2DTree ( ForwardIt first_, ForwardIt last_ ) noexcept :
-        m_dim_start { pick_dimension ( first_, last_ ) },
-        m_dim_mask { m_dim_start ? 0x5555'5555'5555'5555 : 0xAAAA'AAAA'AAAA'AAAA } {
+        m_dim_start { pick_dimension ( first_, last_ ) } {
         assert ( ( last_ - first_ ) <= N );
-        construct ( m_data.data ( ), first_, last_, dim ( 1u ) );
+        construct ( m_data.data ( ), first_, last_, m_dim_start );
     }
 
     template<typename ForwardIt>
@@ -492,9 +489,7 @@ struct Imp2DTree {
         nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
     }
 
-    public:
-
-    [[ nodiscard ]] static bool dim_from_index ( std::size_t x ) noexcept {
+    [[ nodiscard ]] bool dim_from_index ( std::size_t x ) const noexcept {
         if ( likely ( x ) )
             return not ( __builtin_clzll ( x ) & int { 1 } );
         return false;
@@ -570,49 +565,6 @@ struct Imp2DTree {
         } while ( level_start > 1u );
     }
 
-    [[ nodiscard ]] bool dim ( const std::size_t level_start_ ) const noexcept {
-        return level_start_ & m_dim_mask;
-    }
-
-    void nnsa ( Nearest & n_ ) const noexcept {
-        std::size_t level_start { 1u }, level_index { 0u }, level_index_dynamic { 0u };
-        static splitmix64 at_random;
-        static std::bernoulli_distribution select_right;
-        do {
-            const std::size_t node = level_start + level_index_dynamic - 1;
-            if ( is_leaf ( node ) ) {
-                std::cout << "leaf " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
-            }
-            else {
-                std::cout << "itnl " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
-                // test children of node
-                // if any accepted then
-                {
-                    level_start <<= 1;
-                    level_index <<= 1;
-                    level_index_dynamic <<= 1;
-
-                    // if right child ﬁrst then
-                    if ( select_right ( at_random ) ) {
-                        ++level_index_dynamic;
-                    }
-                    // if rejected one child then
-                    {
-                    //    ++level_index;
-                    }
-                    continue;
-                }
-            }
-            ++level_index;
-            const int up = __builtin_ctzll ( level_index );
-            level_start >>= up;
-            level_index >>= up;
-            level_index_dynamic >>= up;
-            level_index_dynamic += ( 1 - 2 * ( level_index_dynamic & std::size_t { 1 } ) );
-
-        } while ( level_start > 1u );
-    }
-
     public:
 
     [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
@@ -684,10 +636,6 @@ Int wmain67878 ( ) {
     std::size_t rv = 0u;
 
     timer.start ( );
-
-    for ( std::size_t i = 0u; i < std::size_t { 1'000'000u }; ++i ) {
-        rv += Tree::dim_from_index ( i );
-    }
 
     std::cout << "dfi   " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
