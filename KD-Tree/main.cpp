@@ -492,68 +492,7 @@ struct Imp2DTree {
         nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
     }
 
-    void nns_impl ( Nearest & n_ ) const noexcept {
-        std::size_t level_start { 1u }, level_index { 0u }, level_index_dynamic { 0u };
-
-        do {
-            const std::size_t node = level_start + level_index_dynamic - 1;
-
-            const float dx = dim ( level_start ) ? m_data [ node ].x - n_.point.x : m_data [ node ].y - n_.point.y;
-            const bool left_first { dx > base_type { 0 } };
-
-            const float d = Imp2DTree::distance_squared ( n_.point, m_data [ node ] );
-            if ( d < n_.min_distance ) {
-                n_.min_distance = d;
-                n_.found = m_data.data ( ) + node;
-            }
-
-            if ( is_leaf ( node ) ) {
-                std::cout << "leaf " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
-            }
-            else {
-
-                std::cout << "itnl " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
-
-                // test children of node
-                // if any accepted then
-                {
-                    level_start <<= 1;
-                    level_index <<= 1;
-                    level_index_dynamic <<= 1;
-
-                    // if right child ﬁrst then
-                    if ( not ( left_first ) ) {
-                        ++level_index_dynamic;
-                    }
-                    // if rejected one child then
-                    //if ( ( dx * dx ) >= n_.min_distance ) {
-                    //    ++level_index;
-                     //   continue;
-                    //}
-                    continue;
-                }
-            }
-            ++level_index;
-            const int up = __builtin_ctzll ( level_index );
-            level_start >>= up;
-            level_index >>= up;
-            level_index_dynamic >>= up;
-            level_index_dynamic += ( 1 - 2 * ( level_index_dynamic & std::size_t { 1 } ) );
-
-        } while ( level_start > 1u );
-    }
-
     public:
-
-    [[ nodiscard ]] static std::size_t ilog2 ( std::size_t x ) noexcept {
-        if ( likely ( x ) ) {
-            return std::size_t { std::numeric_limits<std::size_t>::digits - 1 } - static_cast<std::size_t> ( __builtin_clzll ( x ) );
-        }
-        return std::size_t { 0u };
-    }
-    [[ nodiscard ]] static bool dim2 ( std::size_t x ) noexcept {
-        return Imp2DTree::ilog2 ( x ) & std::size_t { 1u };
-    }
 
     [[ nodiscard ]] static bool dim_from_index ( std::size_t x ) noexcept {
         if ( likely ( x ) )
@@ -561,7 +500,7 @@ struct Imp2DTree {
         return false;
     }
 
-    void nns_impl2 ( Nearest & n_ ) const noexcept {
+    void nns_impl ( Nearest & n_ ) const noexcept {
         std::size_t index { 1u }, level_index { 0u };
 
         do {
@@ -683,9 +622,6 @@ struct Imp2DTree {
         nearest.init ( );
         std::cout << nl << nl;
         nns_impl ( nearest );
-        nearest.init ( );
-        std::cout << nl << nl;
-        nns_impl2 ( nearest );
         std::cout << nl << nl;
         return {}; // *nearest.found;
     }
@@ -719,7 +655,7 @@ struct Imp2DTree {
 
 
 
-Int wmain ( ) {
+Int wmain67878 ( ) {
 
     splitmix64 rng;
     std::uniform_int_distribution<std::size_t> dis { 1u, 1000u };
@@ -750,23 +686,12 @@ Int wmain ( ) {
     timer.start ( );
 
     for ( std::size_t i = 0u; i < std::size_t { 1'000'000u }; ++i ) {
-        rv += Tree::dim2 ( i );
-    }
-
-    std::cout << "dim2  " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
-
-    timer.start ( );
-
-    for ( std::size_t i = 0u; i < std::size_t { 1'000'000u }; ++i ) {
         rv += Tree::dim_from_index ( i );
     }
 
     std::cout << "dfi   " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
     std::cout << rv << nl;
-
-    std::cout << Tree::ilog2 ( 10u ) << nl;
-    std::cout << Tree::ilog2 ( 18u ) << nl;
 
     return EXIT_SUCCESS;
 
@@ -784,7 +709,7 @@ Int wmain ( ) {
 }
 
 
-Int wmain768768 ( ) {
+Int wmain ( ) {
 
     splitmix64 rng;
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
