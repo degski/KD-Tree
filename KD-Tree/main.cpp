@@ -37,6 +37,7 @@
 #include <list>
 #include <map>
 #include <random>
+#include <stack>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -422,11 +423,19 @@ struct Imp2DTree {
 
     [[ nodiscard ]] bool is_leaf ( pointer p_ ) const noexcept {
         assert ( N >= ( p_ - m_data.data ( ) ) );
-        return ( p_ - m_data.data ( ) ) / ( N / 2 );
+        return ( p_ - m_data.data ( ) ) >= std::ptrdiff_t { N / 2 };
     }
     [[ nodiscard ]] bool is_leaf ( const_pointer p_ ) const noexcept {
         assert ( N >= ( p_ - m_data.data ( ) ) );
-        return ( p_ - m_data.data ( ) ) / ( N / 2 );
+        return ( p_ - m_data.data ( ) ) >= std::ptrdiff_t { N / 2 };
+    }
+    [[ nodiscard ]] bool is_internal ( pointer p_ ) const noexcept {
+        assert ( N >= ( p_ - m_data.data ( ) ) );
+        return ( p_ - m_data.data ( ) ) < std::ptrdiff_t { N / 2 };
+    }
+    [[ nodiscard ]] bool is_internal ( const_pointer p_ ) const noexcept {
+        assert ( N >= ( p_ - m_data.data ( ) ) );
+        return ( p_ - m_data.data ( ) ) < std::ptrdiff_t { N / 2 };
     }
     [[ nodiscard ]] static constexpr bool is_leaf ( const Int i_ ) noexcept {
         assert ( N >= i_ );
@@ -483,9 +492,116 @@ struct Imp2DTree {
         const float dx = dim_ ? p_->x - n_.point.x : p_->y - n_.point.y;
         dim_ = not ( dim_ );
         if ( ( dx * dx ) < n_.min_distance ) {
+            std::cout << "call 2" << nl;
             nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
         }
+        std::cout << "call 1" << nl;
         nearest_impl ( dx > base_type { 0 } ? left ( p_ ) : right ( p_ ), n_, dim_ );
+    }
+
+
+    void dfs_inorder ( const const_pointer root_ ) const noexcept {
+
+        const_pointer tmp = root_;
+        std::stack<const_pointer> stck;
+        stck.push ( tmp );
+
+        while ( stck.size ( ) ) {
+
+            // while ( tmp->left != 0 ) {
+            while ( is_internal ( tmp ) ) {
+
+                tmp = left ( tmp );
+                stck.push ( tmp );
+                // std::cout << "pushl " << *tmp << nl;
+            }
+
+            while ( stck.size ( ) ) {
+
+                tmp = stck.top ( );
+                stck.pop ( );
+
+                std::cout << *tmp << nl;
+
+                // if ( tmp->right != 0 ) {
+                if ( is_internal ( tmp ) ) {
+
+                    tmp = right ( tmp );
+                    stck.push ( tmp );
+                    // std::cout << "pushr " << *tmp << nl;
+                    break;
+                }
+            }
+        }
+    }
+
+    template<typename T>
+    [[ nodiscard ]] std::vector<T> make_stck ( ) const noexcept {
+        std::vector<T> v;
+        v.reserve ( 64 );
+        return v;
+    }
+
+    [[ nodiscard ]] const_pointer tag ( const_pointer p_ ) const noexcept {
+        return reinterpret_cast<const_pointer> ( reinterpret_cast<std::uintptr_t> ( p_ ) | std::uintptr_t { 1 } );
+    }
+    [[ nodiscard ]] const_pointer untag ( const_pointer p_ ) const noexcept {
+        return reinterpret_cast<const_pointer> ( reinterpret_cast<std::uintptr_t> ( p_ ) & std::uintptr_t { UINTPTR_MAX - 1 } );
+    }
+    [[ nodiscard ]] bool is_tagged ( const_pointer p_ ) const noexcept {
+        return static_cast<bool> ( reinterpret_cast<std::uintptr_t> ( p_ ) & std::uintptr_t { 1 } );
+    }
+
+    void dfs_preorder ( const_pointer && root_ ) const noexcept {
+        static std::vector<const_pointer> stck { make_stck<const_pointer> ( ) };
+        stck.emplace_back ( m_dim_start ? tag ( root_ ) : root_ );
+        while ( stck.size ( ) ) {
+            const_pointer parent = stck.back ( );
+            stck.pop_back ( );
+            if ( is_tagged ( parent ) ) {
+                parent = untag ( parent );
+                if ( is_internal ( parent ) ) {
+                    stck.emplace_back ( right ( parent ) );
+                    stck.emplace_back ( left ( parent ) );
+                }
+            }
+            else {
+                if ( is_internal ( parent ) ) {
+                    stck.emplace_back ( tag ( right ( parent ) ) );
+                    stck.emplace_back ( tag ( left ( parent ) ) );
+                }
+            }
+            std::cout << *parent << nl;
+        }
+    }
+
+
+    std::size_t dfs ( ) const noexcept {
+        std::size_t i = 0u, leaf = 0u;
+        do {
+            //if ( array [ i ] != null && predicate.test ( array [ i ] ) ) {
+            //    return i; // node found
+            //}
+            std::cout << m_data [ i ] << nl;
+            if ( i < std::size_t { N / 2 } ) { // not leaf node, can be advanced
+                i = 2 * i + 1; // try left child
+            }
+            else { // leaf node, jump
+                std::size_t k = 1;
+                while ( true ) {
+                    i = ( i - 1 ) / 2; // jump to the parent
+                    const std::size_t p = k * 2;
+                    if ( leaf % p == k - 1 ) {
+                        break; // correct number of jumps found
+                    }
+                    k = p;
+                }
+                // after we jumped to the parent, go to the right child
+                i = 2 * i + 2;
+                leaf++; // next leaf, please
+            }
+        } while ( i );
+        return N;
     }
 
     struct S {
@@ -523,7 +639,7 @@ struct Imp2DTree {
                     *stack_ptr++ = { right ( parent.ptr ), not ( parent.dim ) };
                 }
                 *stack_ptr++ = { left ( parent.ptr ), not ( parent.dim ) };
-            } 
+            }
             else {
                 if ( ( dx * dx ) < n_.min_distance ) {
                     *stack_ptr++ = { left ( parent.ptr ), not ( parent.dim ) };
@@ -687,13 +803,15 @@ struct Imp2DTree {
     public:
 
     [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
-        Nearest nearest { point_ };
-        std::cout << nl << nl;
-        nearest_stack_impl ( m_data.data (), nearest, m_dim_start );
+        //Nearest nearest { point_ };
+        //std::cout << nl << nl;
+        //nearest_impl ( m_data.data (), nearest, m_dim_start );
         //nearest.init ( );
         //std::cout << nl << nl;
         //nns_impl ( nearest );
-        return *nearest.found;
+        dfs_preorder ( m_data.data ( ) );
+        // dfs ( );
+        return {}; // *nearest.found;
     }
 
     template<typename Stream>
