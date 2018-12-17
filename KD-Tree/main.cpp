@@ -482,17 +482,84 @@ struct Imp2DTree {
         std::cout << "itnl " << *p_ << nl;
         const float dx = dim_ ? p_->x - n_.point.x : p_->y - n_.point.y;
         dim_ = not ( dim_ );
-        nearest_impl ( dx > base_type { 0 } ? left ( p_ ) : right ( p_ ), n_, dim_ );
-        if ( ( dx * dx ) >= n_.min_distance ) {
-            return;
+        if ( ( dx * dx ) < n_.min_distance ) {
+            nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
         }
-        nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
+        nearest_impl ( dx > base_type { 0 } ? left ( p_ ) : right ( p_ ), n_, dim_ );
     }
 
-    [[ nodiscard ]] bool dim_from_index ( std::size_t x ) const noexcept {
-        if ( likely ( x ) )
-            return not ( __builtin_clzll ( x ) & int { 1 } );
+    struct S {
+        const_pointer ptr;
+        bool dim;
+    };
+
+    void nearest_stack_impl ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
+
+        S stack [ 32 ];
+        S *stack_ptr = stack + 1, *stack_base = stack;
+        stack [ 0 ] = { p_, dim_ };
+
+        while ( stack_ptr != stack_base ) {
+            S parent { * ( --stack_ptr ) };
+
+            const float d = Imp2DTree::distance_squared ( n_.point, *( parent.ptr ) );
+            if ( d < n_.min_distance ) {
+                n_.min_distance = d;
+                n_.found = parent.ptr;
+            }
+
+            if ( is_leaf ( parent.ptr ) ) {
+                std::cout << "leaf " << *parent.ptr << nl;
+                continue;
+            }
+
+            std::cout << "itnl " << *parent.ptr << nl;
+
+            const float dx = parent.dim ? parent.ptr->x - n_.point.x : parent.ptr->y - n_.point.y;
+            const bool left_first { dx > base_type { 0 } };
+
+            if ( left_first ) {
+                if ( ( dx * dx ) < n_.min_distance ) {
+                    *stack_ptr++ = { right ( parent.ptr ), not ( parent.dim ) };
+                }
+                *stack_ptr++ = { left ( parent.ptr ), not ( parent.dim ) };
+            } 
+            else {
+                if ( ( dx * dx ) < n_.min_distance ) {
+                    *stack_ptr++ = { left ( parent.ptr ), not ( parent.dim ) };
+                }
+                *stack_ptr++ = { right ( parent.ptr ), not ( parent.dim ) };
+            }
+        }
+    }
+
+    [[ nodiscard ]] bool dim_from_index ( std::size_t x_ ) const noexcept {
+        if ( likely ( x_ ) )
+            return not ( __builtin_clzll ( x_ ) & int { 1 } );
         return false;
+    }
+
+    [[ nodiscard ]] static std::size_t ilog2 ( std::size_t x ) noexcept {
+        if ( likely ( x ) ) {
+            return std::size_t { std::numeric_limits<std::size_t>::digits - 1 } - static_cast<std::size_t> ( __builtin_clzll ( x ) );
+        }
+        return std::size_t { 0u };
+    }
+
+    [[ nodiscard ]] std::size_t power_of_two_floor ( std::size_t v ) const noexcept {
+        --v;
+        v |= v >>  1;
+        v |= v >>  2;
+        v |= v >>  4;
+        v |= v >>  8;
+        v |= v >> 16;
+        v |= v >> 32;
+        return ( ++v ) / 2 - 1;
+    }
+
+    [[ nodiscard ]] std::size_t right_taken_index ( std::size_t x_ ) const noexcept {
+        // return ( power_of_two_floor ( x_ ) & x_ ) & std::size_t { 1u };
+        return power_of_two_floor ( x_ ) & x_;
     }
 
     void nns_impl ( Nearest & n_ ) const noexcept {
@@ -511,11 +578,11 @@ struct Imp2DTree {
             }
 
             if ( is_leaf ( node ) ) {
-                std::cout << "leaf " << m_data [ node ] << " idx " << index << " dim " << Imp2DTree::dim_from_index ( index ) << " li " << level_index << '\n';
+                std::cout << "leaf " << m_data [ node ] << " idx " << index << " dim " << dim_from_index ( index ) << " ti " << right_taken_index ( index ) << " lf " << left_first << '\n';
             }
             else {
 
-                std::cout << "itnl " << m_data [ node ] << " idx " << index << " dim " << Imp2DTree::dim_from_index ( index ) << " li " << level_index << '\n';
+                std::cout << "itnl " << m_data [ node ] << " idx " << index << " dim " << dim_from_index ( index ) << " ti " << right_taken_index ( index ) << " lf " << left_first << '\n';
 
                 // test children of node
                 // if any accepted then
@@ -523,14 +590,13 @@ struct Imp2DTree {
                     index <<= 1;
                     level_index <<= 1;
 
-                    // if right child ﬁrst then
+                    // if right child ?rst then
                     if ( not ( left_first ) ) {
                         ++index;
                     }
                     // if rejected one child then
                     //if ( ( dx * dx ) >= n_.min_distance ) {
                     //    ++level_index;
-                     //   continue;
                     //}
                     continue;
                 }
@@ -543,6 +609,59 @@ struct Imp2DTree {
 
         } while ( index > 1u );
     }
+
+    /*
+    void nns_impl2 ( Nearest & n_ ) const noexcept {
+        std::size_t level_start { 1u }, level_index { 0u }, level_index_dynamic { 0u };
+
+        do {
+            const std::size_t node = level_start + level_index_dynamic - 1;
+
+            const float dx = dim ( level_start ) ? m_data [ node ].x - n_.point.x : m_data [ node ].y - n_.point.y;
+            const bool left_first { dx > base_type { 0 } };
+
+            const float d = Imp2DTree::distance_squared ( n_.point, m_data [ node ] );
+            if ( d < n_.min_distance ) {
+                n_.min_distance = d;
+                n_.found = m_data.data ( ) + node;
+            }
+
+            if ( is_leaf ( node ) ) {
+                std::cout << "leaf " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
+            }
+            else {
+
+                std::cout << "itnl " << m_data [ node ] << " ls " << level_start << " dim " << dim ( level_start ) << " li " << level_index << " lid " << level_index_dynamic << '\n';
+
+                // test children of node
+                // if any accepted then
+                {
+                    level_start <<= 1;
+                    level_index <<= 1;
+                    level_index_dynamic <<= 1;
+
+                    // if right child ?rst then
+                    if ( not ( left_first ) ) {
+                        ++level_index_dynamic;
+                    }
+                    // if rejected one child then
+                    //if ( ( dx * dx ) >= n_.min_distance ) {
+                    //    ++level_index;
+                     //   continue;
+                    //}
+                    continue;
+                }
+            }
+            ++level_index;
+            const int up = __builtin_ctzll ( level_index );
+            level_start >>= up;
+            level_index >>= up;
+            level_index_dynamic >>= up;
+            level_index_dynamic += ( 1 - 2 * ( level_index_dynamic & std::size_t { 1 } ) );
+
+        } while ( level_start > 1u );
+    }
+    */
 
     void nns ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
         std::size_t level_start { 1u }, level_index { 0u };
@@ -570,12 +689,11 @@ struct Imp2DTree {
     [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
         Nearest nearest { point_ };
         std::cout << nl << nl;
-        nearest_impl ( m_data.data (), nearest, m_dim_start );
-        nearest.init ( );
-        std::cout << nl << nl;
-        nns_impl ( nearest );
-        std::cout << nl << nl;
-        return {}; // *nearest.found;
+        nearest_stack_impl ( m_data.data (), nearest, m_dim_start );
+        //nearest.init ( );
+        //std::cout << nl << nl;
+        //nns_impl ( nearest );
+        return *nearest.found;
     }
 
     template<typename Stream>
@@ -657,7 +775,7 @@ Int wmain67878 ( ) {
 }
 
 
-Int wmain ( ) {
+Int wmain766878 ( ) {
 
     splitmix64 rng;
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
@@ -680,6 +798,8 @@ Int wmain ( ) {
 
     std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
+    std::cout << nl << tree << nl << nl;
+
     Point ptf { 60.0f, 20.5f };
 
     timer.start ( );
@@ -694,17 +814,17 @@ Int wmain ( ) {
 }
 
 
-Int wmain766878 ( ) {
+Int wmain ( ) {
 
-    std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    // std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    Imp2DTree<Point, bin_tree_size ( 6 )> tree ( std::begin ( points ), std::end ( points ) );
+    Imp2DTree<Point, bin_tree_size ( 13 )> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << nl << tree << nl << nl;
 
@@ -715,7 +835,7 @@ Int wmain766878 ( ) {
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << Imp2DTree<Point, bin_tree_size ( 6 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << Imp2DTree<Point, bin_tree_size ( 13 )>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
