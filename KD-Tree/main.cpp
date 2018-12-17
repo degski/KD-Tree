@@ -355,7 +355,7 @@ struct Imp2DTree {
         *node_ = *median;
         construct ( left  ( node_ ),               first_, median, not ( x_dim_ ) );
         if ( 1 == std::distance ( first_, median ) ) {
-            *right ( node_ ) = Point { std::numeric_limits<base_type>::min ( ), std::numeric_limits<base_type>::min ( ) };
+            *right ( node_ ) = Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) };
         }
         construct ( right ( node_ ), std::next ( median ),  last_, not ( x_dim_ ) );
     }
@@ -478,6 +478,131 @@ struct Imp2DTree {
         }
     };
 
+    void foo1 ( const_pointer node_ ) const noexcept {
+        static std::vector<const_pointer> stack { make_stck<const_pointer> ( ) };
+        if ( is_leaf ( node_ ) ) {
+            return;
+        }
+
+         // Do something with node_.
+
+        stack.emplace_back ( right ( node_ ) );
+        stack.emplace_back ( left ( node_ ) );
+
+        while ( stack.size ( ) ) {
+            const_pointer node = stack.back ( );
+            stack.pop_back ( );
+
+            std::cout << "node " << *node << nl;
+
+            if ( is_leaf ( node ) ) {
+                continue;
+            }
+
+             // Do something with node.
+
+            stack.emplace_back ( right ( node ) );
+            stack.emplace_back ( left ( node ) );
+        }
+    }
+
+    void foo ( const Point & point_ ) const noexcept {
+
+        const_pointer node = m_dim_start ? tag ( m_data.data ( ) ) : m_data.data ( );
+        bool is_tagged = m_dim_start;
+        const_pointer found = node;
+        float min_distance = Imp2DTree::distance_squared ( point_, * node );
+
+        static std::vector<const_pointer> stck { make_stck<const_pointer> ( ) };
+
+         // Do something with node.
+
+        if ( is_tagged ) {
+            const float dx = node->x - point_.x;
+            if ( dx > base_type { 0 } ) {
+                if ( ( dx * dx ) < min_distance ) {
+                    stck.emplace_back ( right ( node ) );
+                }
+                stck.emplace_back ( left ( node ) );
+            }
+            else {
+                if ( ( dx * dx ) < min_distance ) {
+                    stck.emplace_back ( left ( node ) );
+                }
+                stck.emplace_back ( right ( node ) );
+            }
+        }
+        else {
+            const float dy = node->y - point_.y;
+            if ( dy > base_type { 0 } ) {
+                if ( ( dy * dy ) < min_distance ) {
+                    stck.emplace_back ( tag ( right ( node ) ) );
+                }
+                stck.emplace_back ( tag ( left ( node ) ) );
+            }
+            else {
+                if ( ( dy * dy ) < min_distance ) {
+                    stck.emplace_back ( tag ( left ( node ) ) );
+                }
+                stck.emplace_back ( tag ( right ( node ) ) );
+            }
+        }
+
+        while ( stck.size ( ) ) {
+            const_pointer node = stck.back ( );
+            stck.pop_back ( );
+
+            is_tagged = has_tag ( node );
+            if ( is_tagged ) {
+                node = untag ( node );
+            }
+            std::cout << "node " << *node << nl;
+
+            const float d = Imp2DTree::distance_squared ( point_, * node );
+            if ( d < min_distance ) {
+                min_distance = d;
+                found = node;
+            }
+
+            if ( is_leaf ( node ) ) {
+                continue;
+            }
+
+             // Do something with node.
+
+            if ( is_tagged ) {
+                const float dx = node->x - point_.x;
+                if ( dx > base_type { 0 } ) {
+                    if ( ( dx * dx ) < min_distance ) {
+                        stck.emplace_back ( right ( node ) );
+                    }
+                    stck.emplace_back ( left ( node ) );
+                }
+                else {
+                    if ( ( dx * dx ) < min_distance ) {
+                        stck.emplace_back ( left ( node ) );
+                    }
+                    stck.emplace_back ( right ( node ) );
+                }
+            }
+            else {
+                const float dy = node->y - point_.y;
+                if ( dy > base_type { 0 } ) {
+                    if ( ( dy * dy ) < min_distance ) {
+                        stck.emplace_back ( tag ( right ( node ) ) );
+                    }
+                    stck.emplace_back ( tag ( left ( node ) ) );
+                }
+                else {
+                    if ( ( dy * dy ) < min_distance ) {
+                        stck.emplace_back ( tag ( left ( node ) ) );
+                    }
+                    stck.emplace_back ( tag ( right ( node ) ) );
+                }
+            }
+        }
+    }
+
     void nearest_impl ( const const_pointer p_, Nearest & n_, bool dim_ ) const noexcept {
         const float d = Imp2DTree::distance_squared ( n_.point, *p_ );
         if ( d < n_.min_distance ) {
@@ -491,12 +616,11 @@ struct Imp2DTree {
         std::cout << "itnl " << *p_ << nl;
         const float dx = dim_ ? p_->x - n_.point.x : p_->y - n_.point.y;
         dim_ = not ( dim_ );
-        if ( ( dx * dx ) < n_.min_distance ) {
-            std::cout << "call 2" << nl;
-            nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
-        }
-        std::cout << "call 1" << nl;
         nearest_impl ( dx > base_type { 0 } ? left ( p_ ) : right ( p_ ), n_, dim_ );
+        if ( ( dx * dx ) >= n_.min_distance ) {
+            return;
+        }
+        nearest_impl ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), n_, dim_ );
     }
 
 
@@ -548,7 +672,7 @@ struct Imp2DTree {
     [[ nodiscard ]] const_pointer untag ( const_pointer p_ ) const noexcept {
         return reinterpret_cast<const_pointer> ( reinterpret_cast<std::uintptr_t> ( p_ ) & ~ std::uintptr_t { 1 } );
     }
-    [[ nodiscard ]] bool is_tagged ( const_pointer p_ ) const noexcept {
+    [[ nodiscard ]] bool has_tag ( const_pointer p_ ) const noexcept {
         return static_cast<bool> ( reinterpret_cast<std::uintptr_t> ( p_ ) & std::uintptr_t { 1 } );
     }
 
@@ -558,7 +682,7 @@ struct Imp2DTree {
         while ( stck.size ( ) ) {
             const_pointer parent = stck.back ( );
             stck.pop_back ( );
-            if ( is_tagged ( parent ) ) {
+            if ( has_tag ( parent ) ) {
                 parent = untag ( parent );
                 if ( is_internal ( parent ) ) {
                     stck.emplace_back ( right ( parent ) );
@@ -575,6 +699,68 @@ struct Imp2DTree {
         }
     }
 
+    void nns_preorder ( const Point & point_  ) const noexcept {
+
+        const_pointer found = nullptr;
+        float min_distance = std::numeric_limits<float>::max ( );
+
+        static std::vector<const_pointer> stck { make_stck<const_pointer> ( ) };
+        stck.emplace_back ( m_dim_start ? tag ( m_data.data ( ) ) : m_data.data ( ) );
+
+        while ( stck.size ( ) ) {
+
+            const_pointer parent = stck.back ( );
+            stck.pop_back ( );
+
+            const bool is_tagged = has_tag ( parent );
+            if ( is_tagged ) {
+                parent = untag ( parent );
+            }
+
+            const float d = Imp2DTree::distance_squared ( point_, *parent );
+            if ( d < min_distance ) {
+                found = parent;
+                min_distance = d;
+            }
+
+            std::cout << *parent << nl;
+
+            if ( is_internal ( parent ) ) {
+
+                if ( is_tagged ) {
+                    const float dx = parent->x - point_.x;
+                    if ( dx > base_type { 0 } ) {
+                        if ( ( dx * dx ) < min_distance ) {
+                            stck.emplace_back ( right ( parent ) );
+                        }
+                        stck.emplace_back ( left ( parent ) );
+                    }
+                    else {
+                        if ( ( dx * dx ) < min_distance ) {
+                            stck.emplace_back ( left ( parent ) );
+                        }
+                        stck.emplace_back ( right ( parent ) );
+                    }
+                }
+                else {
+                    const float dy = parent->y - point_.y;
+                    if ( dy > base_type { 0 } ) {
+                        if ( ( dy * dy ) < min_distance ) {
+                            stck.emplace_back ( tag ( right ( parent ) ) );
+                        }
+                        stck.emplace_back ( tag ( left ( parent ) ) );
+                    }
+                    else {
+                        if ( ( dy * dy ) < min_distance ) {
+                            stck.emplace_back ( tag ( left ( parent ) ) );
+                        }
+                        stck.emplace_back ( tag ( right ( parent ) ) );
+                    }
+                }
+            }
+        }
+        std::cout << "min dist " << min_distance << nl;
+    }
 
     std::size_t dfs ( ) const noexcept {
         std::size_t i = 0u, leaf = 0u;
@@ -803,13 +989,13 @@ struct Imp2DTree {
     public:
 
     [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
-        //Nearest nearest { point_ };
-        //std::cout << nl << nl;
-        //nearest_impl ( m_data.data (), nearest, m_dim_start );
+        Nearest nearest { point_ };
+        std::cout << nl << nl;
+        nearest_impl ( m_data.data (), nearest, m_dim_start );
         //nearest.init ( );
-        //std::cout << nl << nl;
+        std::cout << nl << nl;
         //nns_impl ( nearest );
-        dfs_preorder ( m_data.data ( ) );
+        foo ( point_ );
         // dfs ( );
         return {}; // *nearest.found;
     }
@@ -946,7 +1132,7 @@ Int wmain ( ) {
 
     std::cout << nl << tree << nl << nl;
 
-    Point ptf { 2.1f, 2.9f };
+    Point ptf { 3.1f, 2.9f };
 
     std::cout << nl << nl << "nearest " << nl << tree.find_nearest ( ptf ) << nl;
 
