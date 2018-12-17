@@ -546,7 +546,7 @@ struct Imp2DTree {
         return reinterpret_cast<const_pointer> ( reinterpret_cast<std::uintptr_t> ( p_ ) | std::uintptr_t { 1 } );
     }
     [[ nodiscard ]] const_pointer untag ( const_pointer p_ ) const noexcept {
-        return reinterpret_cast<const_pointer> ( reinterpret_cast<std::uintptr_t> ( p_ ) & std::uintptr_t { UINTPTR_MAX - 1 } );
+        return reinterpret_cast<const_pointer> ( reinterpret_cast<std::uintptr_t> ( p_ ) & ~ std::uintptr_t { 1 } );
     }
     [[ nodiscard ]] bool is_tagged ( const_pointer p_ ) const noexcept {
         return static_cast<bool> ( reinterpret_cast<std::uintptr_t> ( p_ ) & std::uintptr_t { 1 } );
