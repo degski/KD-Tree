@@ -699,16 +699,17 @@ struct Imp2DTree {
         }
     }
 
-
     void dfs_preorder ( const Point & point_ ) const noexcept {
         static std::vector<const_pointer> stck { make_stck<const_pointer> ( ) };
         static const_pointer parent, found;
         static float min_distance;
+        static int ctr;
 
         stck.clear ( );
         parent = m_dim_start ? tag ( m_data.data ( ) ) : m_data.data ( );
         found = m_data.data ( );
         min_distance = Imp2DTree::distance_squared ( point_, *parent );
+        ctr = 0;
 
         stck.emplace_back ( parent );
 
@@ -728,28 +729,27 @@ struct Imp2DTree {
 
             const float dx = is_tagged ? parent->x - point_.x : parent->y - point_.y;
 
-            const_pointer child = dx > base_type { 0 } ? left ( parent ) : right ( parent );
-
-            const float d = Imp2DTree::distance_squared ( point_, *child );
-            if ( d < min_distance ) {
-                min_distance = d;
-                found = child;
+            std::pair child { left ( parent ), right ( parent ) };
+            if ( dx <= base_type { 0 } ) {
+                std::swap ( child.first, child.second );
             }
 
-            stck.emplace_back ( is_tagged ? child : tag ( child ) );
+            const float df = Imp2DTree::distance_squared ( point_, *child.first );
+            if ( df < min_distance )
+                min_distance = df, found = child.first;
 
             if ( ( dx * dx ) < min_distance ) {
-                child = dx > base_type { 0 } ? right ( parent ) : left ( parent );
-                const float dc = Imp2DTree::distance_squared ( point_, *child );
-                if ( dc < min_distance ) {
-                    min_distance = dc;
-                    found = child;
-                }
-                stck.emplace_back ( is_tagged ? child : tag ( child ) );
+                const float ds = Imp2DTree::distance_squared ( point_, *child.second );
+                if ( ds < min_distance )
+                    min_distance = ds, found = child.second;
+                stck.emplace_back ( is_tagged ? child.second : tag ( child.second ) );
             }
 
-            std::cout << *parent << nl;
+            stck.emplace_back ( is_tagged ? child.first : tag ( child.first ) );
+
+            std::cout << "parent " << *parent << nl;
         }
+        std::cout << "found " << *found << " ctr " << ctr << nl;
     }
 
     void nns_preorder ( const Point & point_  ) const noexcept {
