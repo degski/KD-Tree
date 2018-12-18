@@ -462,7 +462,7 @@ struct Imp2DTree {
 
     struct Nearest {
 
-        const Point point;
+        Point point;
         const_pointer found;
         base_type min_distance;
 
@@ -676,7 +676,7 @@ struct Imp2DTree {
         return static_cast<bool> ( reinterpret_cast<std::uintptr_t> ( p_ ) & std::uintptr_t { 1 } );
     }
 
-    void dfs_preorder ( const_pointer && root_ ) const noexcept {
+    void dfs_preorder0 ( const const_pointer & root_ ) const noexcept {
         static std::vector<const_pointer> stck { make_stck<const_pointer> ( ) };
         stck.emplace_back ( m_dim_start ? tag ( root_ ) : root_ );
         while ( stck.size ( ) ) {
@@ -695,6 +695,59 @@ struct Imp2DTree {
                     stck.emplace_back ( tag ( left ( parent ) ) );
                 }
             }
+            std::cout << *parent << nl;
+        }
+    }
+
+
+    void dfs_preorder ( const Point & point_ ) const noexcept {
+        static std::vector<const_pointer> stck { make_stck<const_pointer> ( ) };
+        static const_pointer parent, found;
+        static float min_distance;
+
+        stck.clear ( );
+        parent = m_dim_start ? tag ( m_data.data ( ) ) : m_data.data ( );
+        found = m_data.data ( );
+        min_distance = Imp2DTree::distance_squared ( point_, *parent );
+
+        stck.emplace_back ( parent );
+
+        while ( stck.size ( ) ) {
+
+            parent = stck.back ( );
+            stck.pop_back ( );
+
+            const bool is_tagged = has_tag ( parent );
+            if ( is_tagged ) {
+                parent = untag ( parent );
+            };
+
+            if ( is_leaf ( parent ) ) {
+                continue;
+            }
+
+            const float dx = is_tagged ? parent->x - point_.x : parent->y - point_.y;
+
+            const_pointer child = dx > base_type { 0 } ? left ( parent ) : right ( parent );
+
+            const float d = Imp2DTree::distance_squared ( point_, *child );
+            if ( d < min_distance ) {
+                min_distance = d;
+                found = child;
+            }
+
+            stck.emplace_back ( is_tagged ? child : tag ( child ) );
+
+            if ( ( dx * dx ) < min_distance ) {
+                child = dx > base_type { 0 } ? right ( parent ) : left ( parent );
+                const float dc = Imp2DTree::distance_squared ( point_, *child );
+                if ( dc < min_distance ) {
+                    min_distance = dc;
+                    found = child;
+                }
+                stck.emplace_back ( is_tagged ? child : tag ( child ) );
+            }
+
             std::cout << *parent << nl;
         }
     }
@@ -995,8 +1048,8 @@ struct Imp2DTree {
         //nearest.init ( );
         std::cout << nl << nl;
         //nns_impl ( nearest );
-        foo ( point_ );
-        // dfs ( );
+        // foo ( point_ );
+        dfs_preorder ( point_ );
         return {}; // *nearest.found;
     }
 
