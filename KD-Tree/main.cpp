@@ -58,6 +58,10 @@ template<typename Stream>
 
 #define nl '\n'
 
+using Int = std::int32_t;
+
+#if 0
+
 // Bentley & McIlroy, "fat" partitioning scheme.
 template<typename ForwardIt>
 void quicksort_bentley_mcilroy ( ForwardIt first, ForwardIt last ) noexcept {
@@ -89,9 +93,6 @@ void quicksort ( ForwardIt first, ForwardIt last ) noexcept {
     quicksort ( first, median );
     quicksort ( std::next ( median ),  last );
 }
-
-
-using Int = std::int32_t;
 
 namespace fbt {
 
@@ -316,6 +317,7 @@ class BinTree {
 
 }
 
+#endif
 
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
@@ -329,19 +331,19 @@ struct Imp2DTree {
 
     using base_type = decltype ( T { }.x );
     using value_type = T;
-    using pointer = T *;
-    using reference = T &;
+    using pointer = T * ;
+    using reference = T & ;
     using const_pointer = T const *;
     using const_reference = T const &;
 
-    using container = std::array<T, N>;
+    using container = std::vector<T>;
     using iterator = typename container::iterator;
     using const_iterator = typename container::const_iterator;
 
     private:
 
     template<typename RandomIt>
-    void construct ( const pointer node_, RandomIt first_, RandomIt last_, const bool x_dim_ ) noexcept {
+    void construct_recursive ( const pointer node_, RandomIt first_, RandomIt last_, const bool x_dim_ ) noexcept {
         if ( first_ == last_ ) {
             return;
         }
@@ -353,36 +355,85 @@ struct Imp2DTree {
             std::nth_element ( first_, median, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         }
         *node_ = *median;
-        construct ( left  ( node_ ),               first_, median, not ( x_dim_ ) );
-        construct ( right ( node_ ), std::next ( median ),  last_, not ( x_dim_ ) );
+        construct_recursive ( left  ( node_ ),               first_, median, not ( x_dim_ ) );
+        construct_recursive ( right ( node_ ), std::next ( median ),  last_, not ( x_dim_ ) );
+    }
+
+    template<typename RandomIt>
+    void construct_recursive ( const pointer node_, RandomIt first_, RandomIt last_ ) noexcept {
+        return construct_recursive ( node_, first_, last_, m_dim_start );
+    }
+
+    template<typename RandomIt>
+    struct ConstructHelper {
+        pointer point;
+        RandomIt first, last;
+        bool dim;
+    };
+
+    template<typename RandomIt>
+    void construct ( const pointer node_, RandomIt first_, RandomIt last_ ) noexcept {
+        std::cout << "enter\n";
+        std::vector<ConstructHelper<RandomIt>> stack { make_stck<ConstructHelper<RandomIt>> ( ) };
+
+        stack.emplace_back ( ConstructHelper<RandomIt> { node_, first_, last_, m_dim_start } );
+
+        while ( stack.size ( ) ) {
+            ConstructHelper node = stack.back ( );
+            stack.pop_back ( );
+
+            if ( node.first == node.last ) {
+                continue;
+            }
+
+            if ( is_leaf ( node.point ) ) {
+                continue;
+            }
+
+            // std::cout << "node " << *node.node << nl;
+
+            const RandomIt median = std::next ( node.first, std::distance ( node.first, node.last ) / 2 );
+            if ( node.dim ) {
+                std::nth_element ( node.first, median, node.last, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
+            }
+            else {
+                std::nth_element ( node.first, median, node.last, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
+            }
+            *( node.point ) = *median;
+
+            stack.emplace_back ( ConstructHelper<RandomIt> { left ( node.point ), std::next ( median ), node.last, not ( node.dim ) } );
+            stack.emplace_back ( ConstructHelper<RandomIt> { right ( node.point ), node.first, median, not ( node.dim ) } );
+        }
+        std::cout << "exit\n";
     }
 
     container m_data;
-    const bool m_dim_start;
+    bool m_dim_start;
 
     public:
 
     Imp2DTree ( ) noexcept {
     }
+
+    Imp2DTree ( const Imp2DTree & ) noexcept = delete;
     Imp2DTree ( Imp2DTree && ) noexcept = delete;
-    Imp2DTree ( const Imp2DTree & t_ ) noexcept {
-        m_data = t_.m_data;
-        m_dim_start = t_.m_dim_start;
-    }
+
     Imp2DTree ( std::initializer_list<T> il_ ) noexcept :
+        m_data { N, Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
         m_dim_start { pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) } {
         assert ( il_.size ( ) <= N );
         container points;
         std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
-        std::fill ( std::begin ( m_data ), std::end ( m_data ), Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
-        construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ), m_dim_start );
+        construct ( m_data.data ( ), std::begin ( points ), std::begin ( points ) + il_.size ( ) );
     }
+
     template<typename ForwardIt>
     Imp2DTree ( ForwardIt first_, ForwardIt last_ ) noexcept :
+        m_data { N, Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
         m_dim_start { pick_dimension ( first_, last_ ) } {
+        std::cout << "enter construction body\n";
         assert ( ( last_ - first_ ) <= N );
-        std::fill ( std::begin ( m_data ), std::end ( m_data ), Point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
-        construct ( m_data.data ( ), first_, last_, m_dim_start );
+        construct_recursive ( m_data.data ( ), first_, last_ );
     }
 
     template<typename ForwardIt>
@@ -865,7 +916,7 @@ struct Imp2DTree {
     return s;
 }
 
-
+/*
 
 Int wmain67878 ( ) {
 
@@ -915,6 +966,16 @@ Int wmain67878 ( ) {
 
 Int wmain ( ) {
 
+    constexpr std::size_t N { bin_tree_size ( 90'000 ) };
+    Imp2DTree<Point, N> tree;
+
+    return EXIT_SUCCESS;
+}
+
+*/
+
+Int wmain ( ) {
+
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
@@ -923,7 +984,9 @@ Int wmain ( ) {
     plf::nanotimer timer;
     double st;
 
-    constexpr int n = 90;
+    constexpr int n = 25000000;
+
+    std::cout << bin_tree_size ( n ) << nl;
 
     std::vector<Point> points;
 
@@ -962,7 +1025,7 @@ Int wmain ( ) {
 
     timer.start ( );
     for ( int i = 0; i < cnt; ++i ) {
-        found_linear += tree.find_nearest_linear ( { disx ( rng ), disy ( rng ) }, points );
+        //found_linear += tree.find_nearest_linear ( { disx ( rng ), disy ( rng ) }, points );
     }
     std::cout << "elapsed li " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
@@ -973,8 +1036,9 @@ Int wmain ( ) {
     return EXIT_SUCCESS;
 }
 
+/*
 
-Int wmain568678 ( ) {
+Int wmain769787 ( ) {
 
     // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
@@ -988,6 +1052,8 @@ Int wmain568678 ( ) {
 
     std::cout << nl << tree << nl << nl;
 
+    return EXIT_SUCCESS;
+
     Point point { 3.1f, 2.9f };
 
     std::cout << nl << nl << "nearest " << nl << tree.find_nearest_recursive ( point ) << nl;
@@ -1000,3 +1066,4 @@ Int wmain568678 ( ) {
 
     return EXIT_SUCCESS;
 }
+*/
