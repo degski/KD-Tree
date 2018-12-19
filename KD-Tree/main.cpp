@@ -347,7 +347,7 @@ struct Imp2DTree {
         if ( first_ == last_ ) {
             return;
         }
-        RandomIt median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        const RandomIt median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         if ( x_dim_ ) {
             std::nth_element ( first_, median, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
         }
@@ -507,23 +507,20 @@ struct Imp2DTree {
     }
 
     void nearest_recursive0 ( const const_pointer p_, bool dim_ ) const noexcept {
-        const float d = Imp2DTree::distance_squared ( m_nearest.point, *p_ );
+        float d = Imp2DTree::distance_squared ( m_nearest.point, *p_ );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d;
             m_nearest.found = p_;
         }
         if ( is_leaf ( p_ ) ) {
-            // std::cout << "leaf " << *p_ << nl;
             return;
         }
-        // std::cout << "itnl " << *p_ << nl;
-        const float dx = dim_ ? p_->x - m_nearest.point.x : p_->y - m_nearest.point.y;
+        d = dim_ ? p_->x - m_nearest.point.x : p_->y - m_nearest.point.y;
         dim_ = not ( dim_ );
-        nearest_recursive0 ( dx > base_type { 0 } ? left ( p_ ) : right ( p_ ), dim_ );
-        if ( ( dx * dx ) >= m_nearest.min_distance ) {
-            return;
+        nearest_recursive0 ( d > base_type { 0 } ? left ( p_ ) : right ( p_ ), dim_ );
+        if ( ( d * d ) < m_nearest.min_distance ) {
+            nearest_recursive0 ( d > base_type { 0 } ? right ( p_ ) : left ( p_ ), dim_ );
         }
-        nearest_recursive0 ( dx > base_type { 0 } ? right ( p_ ) : left ( p_ ), dim_ );
     }
 
     const_pointer nearest_recursive0 ( const Point & p_ ) const noexcept {
@@ -574,7 +571,7 @@ struct Imp2DTree {
 
     [[ nodiscard ]] Point find_nearest ( const Point & point_ ) const noexcept {
         // Fastest and correct.
-        return * nearest_recursive0 ( point_ );
+        return * nearest_recursive ( point_ );
     }
 
     template<typename Stream>
@@ -664,7 +661,7 @@ Int wmain ( ) {
     plf::nanotimer timer;
     double st;
 
-    constexpr int n = 25000000;
+    constexpr int n = 10'000;
 
     std::cout << bin_tree_size ( n ) << nl;
 
@@ -684,7 +681,7 @@ Int wmain ( ) {
 
     Point point { disx ( rng ), disy ( rng ) };
 
-    auto found_impl = tree.find_nearest ( point );;
+    auto found_impl = tree.find_nearest ( point );
 
     constexpr int cnt = 1'000'000;
 
@@ -701,9 +698,9 @@ Int wmain ( ) {
     return EXIT_SUCCESS;
 }
 
-/*
 
-Int wmain769787 ( ) {
+
+Int wmain89879789 ( ) {
 
     // std::vector<Point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<Point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
@@ -717,11 +714,9 @@ Int wmain769787 ( ) {
 
     std::cout << nl << tree << nl << nl;
 
-    return EXIT_SUCCESS;
-
     Point point { 3.1f, 2.9f };
 
-    std::cout << nl << nl << "nearest " << nl << tree.find_nearest_recursive ( point ) << nl;
+    std::cout << nl << nl << "nearest " << nl << tree.find_nearest ( point ) << nl;
 
     std::cout << nl;
 
@@ -731,4 +726,4 @@ Int wmain769787 ( ) {
 
     return EXIT_SUCCESS;
 }
-*/
+
