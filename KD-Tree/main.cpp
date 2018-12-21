@@ -48,7 +48,7 @@ namespace fs = std::filesystem;
 #include <splitmix.hpp>
 #include <plf/plf_nanotimer.h>
 
-using point = sf::Vector2f;
+using point = sf::Vector2<float>;
 
 template<typename Stream>
 [[ maybe_unused ]] Stream & operator << ( Stream & out_, const point & p_ ) noexcept {
@@ -355,30 +355,30 @@ struct i2dtree {
     }
 
     [[ nodiscard ]] pointer left ( const pointer p_ ) const noexcept {
-        return p_ + ( p_ - m_data.data ( ) ) + 1;
+        return ( p_ + 1 ) + ( p_ - m_data.data ( ) );
     }
     [[ nodiscard ]] pointer right ( const pointer p_ ) const noexcept {
-        return p_ + ( p_ - m_data.data ( ) ) + 2;
+        return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
     }
     [[ nodiscard ]] const_pointer left ( const const_pointer p_ ) const noexcept {
-        return p_ + ( p_ - m_data.data ( ) ) + 1;
+        return ( p_ + 1 ) + ( p_ - m_data.data ( ) );
     }
     [[ nodiscard ]] const_pointer right ( const const_pointer p_ ) const noexcept {
-        return p_ + ( p_ - m_data.data ( ) ) + 2;
+        return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
     }
 
-    [[ nodiscard ]] bool is_leaf ( const_pointer p_ ) const noexcept {
-        return m_num_nodes_div2 < ( p_ - m_data.data ( ) );
+    [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
+        return m_num_nodes_div2 <= ( p_ - m_data.data ( ) );
     }
 
     template<typename random_it>
     void construct_recursive ( const pointer node_, random_it first_, random_it last_, bool dim_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         if ( dim_ ) {
-            std::nth_element ( first_, median, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
+            std::nth_element ( first_, median, last_, [ ] ( const point & a, const point & b ) { return a.x < b.x; } );
         }
         else {
-            std::nth_element ( first_, median, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
+            std::nth_element ( first_, median, last_, [ ] ( const point & a, const point & b ) { return a.y < b.y; } );
         }
         *node_ = *median;
         dim_ = not ( dim_ );
@@ -391,16 +391,17 @@ struct i2dtree {
     }
 
     void nearest_recursive ( const const_pointer p_, bool dim_ ) const noexcept {
-        float d = i2dtree::distance_squared ( *p_, m_nearest.point );
+        assert ( p_ >= m_data.data ( ) );
+        assert ( p_ < ( m_data.data ( ) + m_data.size ( ) ) );
+        base_type d = i2dtree::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d;
-            m_nearest.found = p_;
+            m_nearest.min_distance = d; m_nearest.found = p_;
         }
         if ( is_leaf ( p_ ) ) {
-            std::cout << *p_ << nl;
+            // std::cout << *p_ << nl;
             return;
         }
-        std::cout << *p_ << nl;
+        // std::cout << *p_ << nl;
         d = dim_ ? p_->x - m_nearest.point.x : p_->y - m_nearest.point.y;
         dim_ = not ( dim_ );
         nearest_recursive ( d > base_type { 0 } ? left ( p_ ) : right ( p_ ), dim_ );
@@ -443,10 +444,18 @@ struct i2dtree {
     i2dtree & operator = ( const i2dtree & ) = delete;
     i2dtree & operator = ( i2dtree && ) noexcept = delete;
 
-    [[ nodiscard ]] point find_nearest ( const point & point_ ) const noexcept {
+    [[ nodiscard ]] const_pointer find_nearest_ptr ( const point & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         nearest_recursive ( m_data.data ( ), m_dim_start );
-        return * m_nearest.found;
+        return m_nearest.found;
+    }
+
+    [[ nodiscard ]] std::ptrdiff_t find_nearest_idx ( const point & point_ ) const noexcept {
+        return find_nearest_ptr ( point_ ) - m_data.data ( );
+    }
+
+    [[ nodiscard ]] point find_nearest_pnt ( const point & point_ ) const noexcept {
+        return * find_nearest_ptr ( point_ );
     }
 
     [[ nodiscard ]] static constexpr base_type distance_squared ( const point & p1_, const point & p2_ ) noexcept {
@@ -479,8 +488,8 @@ struct i2dtree {
         std::swap ( c, m_data );
     }
 
-    [[ nodiscard ]] static const_pointer nearest_linear ( const point & point_, const std::vector<point> & points_ ) noexcept {
-        // fastest uptill 50.
+    [[ nodiscard ]] static point find_nearest_linear_pnt ( const point & point_, const std::vector<point> & points_ ) noexcept {
+        // Fastest up till 50 points.
         const_pointer found = nullptr;
         float min_distance = std::numeric_limits<float>::max ( );
         for ( const auto & v : points_ ) {
@@ -490,16 +499,19 @@ struct i2dtree {
                 min_distance = d;
             }
         }
-        return found;
+        return * found;
     }
 
-    private:
+    // private:
 
     template<typename T>
     [[ nodiscard ]] static constexpr T bin_tree_size ( const T i_ ) noexcept {
         T s = 0, p = 2;
-        while ( s < i_ ) {
+        while ( true ) {
             s = p - 1;
+            if ( s >= i_ ) {
+                break;
+            }
             p *= 2;
         }
         return s;
@@ -558,46 +570,55 @@ int wmain67878 ( ) {
 
 int wmain ( ) {
 
-
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 0.0f, 40.0f };
 
-    plf::nanotimer timer;
-    double st;
+    for ( int i = 0; i < 10; ++i ) {
 
-    constexpr int n = 10'000;
+        plf::nanotimer timer;
+        double st;
 
-    std::vector<point> points;
+        constexpr int n = 100'000;
 
-    for ( int i = 0; i < n; ++i ) {
-        points.emplace_back ( disx ( rng ), disy ( rng ) );
+        std::vector<point> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        i2dtree<point> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        // std::cout << nl << tree << nl << nl;
+
+        //point p { disx ( rng ), disy ( rng ) };
+
+        //std::cout << "ptf " << p << nl;
+
+        bool result = true;
+
+        constexpr int cnt = 100'000;
+
+        timer.start ( );
+        for ( int i = 0; i < cnt; ++i ) {
+            const point p { disx ( rng ), disy ( rng ) };
+            bool r = tree.find_nearest_pnt ( p ) == i2dtree<point>::find_nearest_linear_pnt ( p, points );
+            if ( not ( r ) ) {
+                std::cout << p << tree.find_nearest_pnt ( p ) << i2dtree<point>::find_nearest_linear_pnt ( p, points ) << nl;
+                exit ( 0 );
+            }
+            result &= r;
+        }
+        // std::cout << "elapsed im " << ( std::uint64_t ) ( timer.get_elapsed_ns ( ) / cnt ) << " ns" << nl;
+
+        std::cout << std::boolalpha << result << nl;
+
+        // std::cout << "nearest im " << found_impl << " " << i2dtree<point>::find_nearest_linear_pnt ( p, points ) << nl;
     }
-
-    timer.start ( );
-
-    i2dtree<point> tree ( std::begin ( points ), std::end ( points ) );
-
-    std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
-
-    // std::cout << nl << tree << nl << nl;
-
-    point p { disx ( rng ), disy ( rng ) };
-
-    std::cout << "ptf " << p << nl;
-
-    auto found_impl = tree.find_nearest ( p );
-
-    constexpr int cnt = 1;// '000'000;
-
-    timer.start ( );
-    for ( int i = 0; i < cnt; ++i ) {
-        found_impl = tree.find_nearest ( p /*{ disx ( rng ), disy ( rng ) } */ );
-    }
-    std::cout << "elapsed im " << ( std::uint64_t ) ( timer.get_elapsed_ns ( ) / cnt ) << " ns" << nl;
-
-
-    std::cout << "nearest im " << found_impl << " " << *i2dtree<point>::nearest_linear ( p, points ) << nl;
 
     return EXIT_SUCCESS;
 }
@@ -620,7 +641,7 @@ int wmain4515 ( ) {
 
     point ptf { 7.6f, 7.9f };
 
-    std::cout << nl << nl << "nearest " << nl << tree.find_nearest ( ptf ) << nl;
+    std::cout << nl << nl << "nearest " << nl << tree.find_nearest_pnt ( ptf ) << nl;
 
     std::cout << nl;
 
