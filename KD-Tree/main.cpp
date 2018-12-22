@@ -52,7 +52,12 @@ using point = sf::Vector2<float>;
 
 template<typename Stream>
 [[ maybe_unused ]] Stream & operator << ( Stream & out_, const point & p_ ) noexcept {
-    out_ << '<' << p_.x << ' ' << p_.y << '>';
+    if ( point { std::numeric_limits<decltype ( p_.x )>::max ( ), std::numeric_limits<decltype ( p_.y )>::max ( ) } != p_ ) {
+        out_ << '<' << p_.x << ' ' << p_.y << '>';
+    }
+    else {
+        out_ << "<x>";
+    }
     return out_;
 }
 
@@ -360,11 +365,17 @@ struct i2dtree {
     [[ nodiscard ]] pointer right ( const pointer p_ ) const noexcept {
         return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
     }
+    [[ nodiscard ]] pointer parent ( const pointer p_ ) const noexcept {
+        return const_cast<pointer> ( m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2 );
+    }
     [[ nodiscard ]] const_pointer left ( const const_pointer p_ ) const noexcept {
         return ( p_ + 1 ) + ( p_ - m_data.data ( ) );
     }
     [[ nodiscard ]] const_pointer right ( const const_pointer p_ ) const noexcept {
         return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
+    }
+    [[ nodiscard ]] const_pointer parent ( const const_pointer p_ ) const noexcept {
+        return m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2;
     }
 
     [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
@@ -372,7 +383,7 @@ struct i2dtree {
     }
 
     template<typename random_it>
-    void construct_recursive ( const pointer node_, random_it first_, random_it last_, bool dim_ ) noexcept {
+    void construct_recursive ( const pointer p_, random_it first_, random_it last_, bool dim_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         if ( dim_ ) {
             std::nth_element ( first_, median, last_, [ ] ( const point & a, const point & b ) { return a.x < b.x; } );
@@ -380,19 +391,17 @@ struct i2dtree {
         else {
             std::nth_element ( first_, median, last_, [ ] ( const point & a, const point & b ) { return a.y < b.y; } );
         }
-        *node_ = *median;
+        *p_ = *median;
         dim_ = not ( dim_ );
         if ( first_   != median ) {
-            construct_recursive ( left  ( node_ ), first_, median, dim_ );
+            construct_recursive ( left  ( p_ ), first_, median, dim_ );
         }
         if ( ++median !=  last_ ) {
-            construct_recursive ( right ( node_ ), median,  last_, dim_ );
+            construct_recursive ( right ( p_ ), median,  last_, dim_ );
         }
     }
 
     void nearest_recursive ( const const_pointer p_, bool dim_ ) const noexcept {
-        assert ( p_ >= m_data.data ( ) );
-        assert ( p_ < ( m_data.data ( ) + m_data.size ( ) ) );
         base_type d = i2dtree::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
@@ -412,6 +421,7 @@ struct i2dtree {
 
     container m_data;
     mutable nearest_data m_nearest;
+    std::size_t m_num_nodes;
     std::ptrdiff_t m_num_nodes_div2;
     bool m_dim_start;
 
@@ -422,7 +432,8 @@ struct i2dtree {
 
     i2dtree ( std::initializer_list<T> il_ ) noexcept :
         m_data { bin_tree_size<std::size_t> ( il_.size ( ) ), point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
-        m_num_nodes_div2 { static_cast<std::ptrdiff_t> ( m_data.size ( ) / 2 ) },
+        m_num_nodes { il_.size ( ) },
+        m_num_nodes_div2 { static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2 },
         m_dim_start { pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) } {
         if ( il_.size ( ) ) {
             container points;
@@ -434,7 +445,8 @@ struct i2dtree {
     template<typename forward_it>
     i2dtree ( forward_it first_, forward_it last_ ) noexcept :
         m_data { bin_tree_size<std::size_t> ( static_cast<std::size_t> ( std::distance ( first_, last_ ) ) ), point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
-        m_num_nodes_div2 { static_cast<std::ptrdiff_t> ( m_data.size ( ) / 2 ) },
+        m_num_nodes { static_cast<std::size_t> ( std::distance ( first_, last_ ) ) },
+        m_num_nodes_div2 { static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2 },
         m_dim_start { pick_dimension ( first_, last_ ) } {
         if ( first_ != last_  ) {
             construct_recursive ( m_data.data ( ), first_, last_, m_dim_start );
@@ -464,28 +476,22 @@ struct i2dtree {
 
     template<typename Stream>
     [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const i2dtree & tree_ ) noexcept {
-        for ( const auto p : tree_.m_data ) {
+        for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
         return out_;
     }
 
     void add_point ( const point & p_ ) {
+        if ( ++m_num_nodes > m_data.size ( ) ) {
+            m_data.resize ( ( m_data.size ( ) + 1 ) * 2 - 1, point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+            m_num_nodes_div2 = static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2;
+        }
         auto last = std::partition ( std::begin ( m_data ), std::end ( m_data ), [ ] ( const point & p ) { return p != point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }; } );
-        std::cout << "here\n";
-        if ( likely ( std::end ( m_data ) != last ) ) {
-            *last = p_;
-            ++last;
-        }
-        else {
-            m_data.push_back ( p_ );
-            last = std::end ( m_data );
-        }
-        m_num_nodes_div2 = bin_tree_size ( last - std::begin ( m_data ) );
-        container c { static_cast<std::size_t> ( m_num_nodes_div2 ), point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } };
-        m_num_nodes_div2 /= 2;
-        construct_recursive ( c.data ( ), std::begin ( m_data ), last, m_dim_start );
-        std::swap ( c, m_data );
+        *last++ = p_;
+        i2dtree tmp { std::begin ( m_data ), last };
+        std::swap ( m_data, tmp.m_data );
+        m_dim_start = tmp.m_dim_start;
     }
 
     [[ nodiscard ]] static point find_nearest_linear_pnt ( const point & point_, const std::vector<point> & points_ ) noexcept {
@@ -515,6 +521,16 @@ struct i2dtree {
             p *= 2;
         }
         return s;
+    }
+
+    [[ nodiscard ]] constexpr bool leaf_dim ( ) noexcept {
+        std::size_t p = 2u;
+        bool b = m_dim_start;
+        while ( ( p - 1 ) != m_data.size ( ) ) {
+            b = not ( b );
+            p *= 2;
+        }
+        return b;
     }
 };
 
@@ -568,18 +584,18 @@ int wmain67878 ( ) {
 
 */
 
-int wmain ( ) {
+int wmain8087 ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 0.0f, 40.0f };
 
-    for ( int i = 0; i < 10; ++i ) {
+    for ( int i = 0; i < 100; ++i ) {
 
         plf::nanotimer timer;
         double st;
 
-        constexpr int n = 100'000;
+        constexpr int n = 1'000;
 
         std::vector<point> points;
 
@@ -608,8 +624,12 @@ int wmain ( ) {
             const point p { disx ( rng ), disy ( rng ) };
             bool r = tree.find_nearest_pnt ( p ) == i2dtree<point>::find_nearest_linear_pnt ( p, points );
             if ( not ( r ) ) {
-                std::cout << p << tree.find_nearest_pnt ( p ) << i2dtree<point>::find_nearest_linear_pnt ( p, points ) << nl;
-                exit ( 0 );
+                const point p1 = tree.find_nearest_pnt ( p ), p2 = i2dtree<point>::find_nearest_linear_pnt ( p, points );
+                const float f1 = i2dtree<point>::distance_squared ( p, p1 ), f2 = i2dtree<point>::distance_squared ( p, p2 );
+                if ( f1 == f2 ) {
+                    continue;
+                }
+                std::cout << p1 << f1 << p2 << f2 << nl;
             }
             result &= r;
         }
@@ -625,7 +645,7 @@ int wmain ( ) {
 
 
 
-int wmain4515 ( ) {
+int wmain ( ) {
 
     // std::vector<point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
@@ -638,6 +658,7 @@ int wmain4515 ( ) {
     i2dtree<point> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << nl << tree << nl << nl;
+    std::cout << tree.leaf_dim ( ) << nl;
 
     point ptf { 7.6f, 7.9f };
 
@@ -649,9 +670,23 @@ int wmain4515 ( ) {
         std::cout << i2dtree<point>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
-    // tree.add_point ( ptf );
+    tree.add_point ( ptf );
 
-    // std::cout << nl << tree << nl << nl;
+    std::cout << nl << tree << nl << nl;
+
+    std::cout << nl << nl << "nearest " << nl << tree.find_nearest_pnt ( point { 7.7f, 8.0f } ) << nl;
+
+    point ptf2 { 1.6f, 9.9f };
+
+    tree.add_point ( ptf2 );
+
+    std::cout << nl << tree << nl << nl;
+
+    point ptf3 { 4.1f, 6.0f };
+
+    tree.add_point ( ptf3 );
+
+    std::cout << nl << tree << nl << nl;
 
     return EXIT_SUCCESS;
 }
