@@ -50,6 +50,8 @@ namespace fs = std::filesystem;
 
 using point = sf::Vector2<float>;
 
+#include "kdtree.h"
+
 template<typename Stream>
 [[ maybe_unused ]] Stream & operator << ( Stream & out_, const point & p_ ) noexcept {
     if ( point { std::numeric_limits<decltype ( p_.x )>::max ( ), std::numeric_limits<decltype ( p_.y )>::max ( ) } != p_ ) {
@@ -379,50 +381,80 @@ struct i2dtree {
     }
 
     [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
-        return m_num_nodes_div2 <= ( p_ - m_data.data ( ) );
+        return m_leaf_start <= ( p_ - m_data.data ( ) );
     }
 
     template<typename random_it>
-    void construct_recursive ( const pointer p_, random_it first_, random_it last_, bool dim_ ) noexcept {
+    void construct_recursive_x ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
-        if ( dim_ ) {
-            std::nth_element ( first_, median, last_, [ ] ( const point & a, const point & b ) { return a.x < b.x; } );
-        }
-        else {
-            std::nth_element ( first_, median, last_, [ ] ( const point & a, const point & b ) { return a.y < b.y; } );
-        }
+        std::nth_element ( first_, median, last_, [ ] ( const point & a, const point & b ) { return a.x < b.x; } );
         *p_ = *median;
-        dim_ = not ( dim_ );
+        if ( first_ != median ) {
+            construct_recursive_y ( left ( p_ ), first_, median );
+        }
+        if ( ++median != last_ ) {
+            construct_recursive_y ( right ( p_ ), median, last_ );
+        }
+    }
+    template<typename random_it>
+    void construct_recursive_y ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+        random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        std::nth_element ( first_, median, last_, [ ] ( const point & a, const point & b ) { return a.y < b.y; } );
+        *p_ = *median;
         if ( first_   != median ) {
-            construct_recursive ( left  ( p_ ), first_, median, dim_ );
+            construct_recursive_x ( left  ( p_ ), first_, median );
         }
         if ( ++median !=  last_ ) {
-            construct_recursive ( right ( p_ ), median,  last_, dim_ );
+            construct_recursive_x ( right ( p_ ), median,  last_ );
         }
     }
 
-    void nearest_recursive ( const const_pointer p_, bool dim_ ) const noexcept {
+    void nearest_recursive_x ( const const_pointer p_ ) const noexcept {
         base_type d = i2dtree::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
         if ( is_leaf ( p_ ) ) {
-            // std::cout << *p_ << nl;
             return;
         }
-        // std::cout << *p_ << nl;
-        d = dim_ ? p_->x - m_nearest.point.x : p_->y - m_nearest.point.y;
-        dim_ = not ( dim_ );
-        nearest_recursive ( d > base_type { 0 } ? left ( p_ ) : right ( p_ ), dim_ );
-        if ( ( d * d ) < m_nearest.min_distance ) {
-            nearest_recursive ( d > base_type { 0 } ? right ( p_ ) : left ( p_ ), dim_ );
+        if ( ( d = p_->x - m_nearest.point.x ) > base_type { 0 } ) {
+            nearest_recursive_y ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) ) {
+                nearest_recursive_y ( right ( p_ ) );
+            }
+        }
+        else {
+            nearest_recursive_y ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) ) {
+                nearest_recursive_y ( left ( p_ ) );
+            }
+        }
+    }
+    void nearest_recursive_y ( const const_pointer p_ ) const noexcept {
+        base_type d = i2dtree::distance_squared ( *p_, m_nearest.point );
+        if ( d < m_nearest.min_distance ) {
+            m_nearest.min_distance = d; m_nearest.found = p_;
+        }
+        if ( is_leaf ( p_ ) ) {
+            return;
+        }
+        if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
+            nearest_recursive_x ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) ) {
+                nearest_recursive_x ( right ( p_ ) );
+            }
+        }
+        else {
+            nearest_recursive_x ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) ) {
+                nearest_recursive_x ( left ( p_ ) );
+            }
         }
     }
 
     container m_data;
     mutable nearest_data m_nearest;
-    std::size_t m_num_nodes;
-    std::ptrdiff_t m_num_nodes_div2;
+    std::ptrdiff_t m_leaf_start;
     bool m_dim_start;
 
     public:
@@ -432,24 +464,28 @@ struct i2dtree {
 
     i2dtree ( std::initializer_list<T> il_ ) noexcept :
         m_data { bin_tree_size<std::size_t> ( il_.size ( ) ), point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
-        m_num_nodes { il_.size ( ) },
-        m_num_nodes_div2 { static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2 },
+        m_leaf_start { static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2 },
         m_dim_start { pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) } {
         if ( il_.size ( ) ) {
             container points;
             std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
-            construct_recursive ( m_data.data ( ), std::begin ( points ), std::end ( points ), m_dim_start );
+            if ( m_dim_start )
+                construct_recursive_x ( m_data.data ( ), std::begin ( points ), std::end ( points ) );
+            else
+                construct_recursive_y ( m_data.data ( ), std::begin ( points ), std::end ( points ) );
         }
     }
 
     template<typename forward_it>
     i2dtree ( forward_it first_, forward_it last_ ) noexcept :
         m_data { bin_tree_size<std::size_t> ( static_cast<std::size_t> ( std::distance ( first_, last_ ) ) ), point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
-        m_num_nodes { static_cast<std::size_t> ( std::distance ( first_, last_ ) ) },
-        m_num_nodes_div2 { static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2 },
+        m_leaf_start { static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2 },
         m_dim_start { pick_dimension ( first_, last_ ) } {
         if ( first_ != last_  ) {
-            construct_recursive ( m_data.data ( ), first_, last_, m_dim_start );
+            if ( m_dim_start )
+                construct_recursive_x ( m_data.data ( ), first_, last_ );
+            else
+                construct_recursive_y ( m_data.data ( ), first_, last_ );
         }
     }
 
@@ -458,7 +494,10 @@ struct i2dtree {
 
     [[ nodiscard ]] const_pointer find_nearest_ptr ( const point & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
-        nearest_recursive ( m_data.data ( ), m_dim_start );
+        if ( m_dim_start )
+            nearest_recursive_x ( m_data.data ( ) );
+        else
+            nearest_recursive_y ( m_data.data ( ) );
         return m_nearest.found;
     }
 
@@ -483,9 +522,9 @@ struct i2dtree {
     }
 
     void add_point ( const point & p_ ) {
-        if ( ++m_num_nodes > m_data.size ( ) ) {
+        if ( m_data.size ( ) == m_data.capacity ( ) ) {
             m_data.resize ( ( m_data.size ( ) + 1 ) * 2 - 1, point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
-            m_num_nodes_div2 = static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2;
+            m_leaf_start = static_cast<std::ptrdiff_t> ( m_data.size ( ) ) / 2;
         }
         auto last = std::partition ( std::begin ( m_data ), std::end ( m_data ), [ ] ( const point & p ) { return p != point { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }; } );
         *last++ = p_;
@@ -645,7 +684,7 @@ int wmain8087 ( ) {
 
 
 
-int wmain ( ) {
+int wmain897 ( ) {
 
     // std::vector<point> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<point> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
@@ -691,3 +730,349 @@ int wmain ( ) {
     return EXIT_SUCCESS;
 }
 
+
+using namespace std;
+
+const int k = 2;
+
+// A structure to represent node of kd tree
+struct Node {
+    int point [ k ]; // To store k dimensional point
+    Node *left, *right;
+};
+
+// A method to create a node of K D tree
+struct Node* newNode ( int arr [ ] ) {
+    struct Node* temp = new Node;
+
+    for ( int i = 0; i < k; i++ )
+        temp->point [ i ] = arr [ i ];
+
+    temp->left = temp->right = NULL;
+    return temp;
+}
+
+// Inserts a new node and returns root of modified tree
+// The parameter depth is used to decide axis of comparison
+Node *insertRec ( Node *root, int point [ ], unsigned depth ) {
+    // Tree is empty?
+    if ( root == NULL )
+        return newNode ( point );
+
+    // Calculate current dimension (cd) of comparison
+    unsigned cd = depth % k;
+
+    // Compare the new point with root on current dimension 'cd'
+    // and decide the left or right subtree
+    if ( point [ cd ] < ( root->point [ cd ] ) )
+        root->left = insertRec ( root->left, point, depth + 1 );
+    else
+        root->right = insertRec ( root->right, point, depth + 1 );
+
+    return root;
+}
+
+// Function to insert a new point with given point in
+// KD Tree and return new root. It mainly uses above recursive
+// function "insertRec()"
+Node* insert ( Node *root, int point [ ] ) {
+    return insertRec ( root, point, 0 );
+}
+
+// A utility function to find minimum of three integers
+Node *minNode ( Node *x, Node *y, Node *z, int d ) {
+    Node *res = x;
+    if ( y != NULL && y->point [ d ] < res->point [ d ] )
+        res = y;
+    if ( z != NULL && z->point [ d ] < res->point [ d ] )
+        res = z;
+    return res;
+}
+
+// Recursively finds minimum of d'th dimension in KD tree
+// The parameter depth is used to determine current axis.
+Node *findMinRec ( Node* root, int d, unsigned depth ) {
+    // Base cases
+    if ( root == NULL )
+        return NULL;
+
+    // Current dimension is computed using current depth and total
+    // dimensions (k)
+    unsigned cd = depth % k;
+
+    // Compare point with root with respect to cd (Current dimension)
+    if ( cd == d ) {
+        if ( root->left == NULL )
+            return root;
+        return findMinRec ( root->left, d, depth + 1 );
+    }
+
+    // If current dimension is different then minimum can be anywhere
+    // in this subtree
+    return minNode ( root,
+        findMinRec ( root->left, d, depth + 1 ),
+        findMinRec ( root->right, d, depth + 1 ), d );
+}
+
+// A wrapper over findMinRec(). Returns minimum of d'th dimension
+Node *findMin ( Node* root, int d ) {
+    // Pass current level or depth as 0
+    return findMinRec ( root, d, 0 );
+}
+
+// A utility method to determine if two Points are same
+// in K Dimensional space
+bool arePointsSame ( int point1 [ ], int point2 [ ] ) {
+    // Compare individual pointinate values
+    for ( int i = 0; i < k; ++i )
+        if ( point1 [ i ] != point2 [ i ] )
+            return false;
+
+    return true;
+}
+
+// Copies point p2 to p1
+void copyPoint ( int p1 [ ], int p2 [ ] ) {
+    for ( int i = 0; i < k; i++ )
+        p1 [ i ] = p2 [ i ];
+}
+
+// Function to delete a given point 'point[]' from tree with root
+// as 'root'.  depth is current depth and passed as 0 initially.
+// Returns root of the modified tree.
+Node *deleteNodeRec ( Node *root, int point [ ], int depth ) {
+    // Given point is not present
+    if ( root == NULL )
+        return NULL;
+
+    // Find dimension of current node
+    int cd = depth % k;
+
+    // If the point to be deleted is present at root
+    if ( arePointsSame ( root->point, point ) ) {
+        // 2.b) If right child is not NULL
+        if ( root->right != NULL ) {
+            // Find minimum of root's dimension in right subtree
+            Node *min = findMin ( root->right, cd );
+
+            // Copy the minimum to root
+            copyPoint ( root->point, min->point );
+
+            // Recursively delete the minimum
+            root->right = deleteNodeRec ( root->right, min->point, depth + 1 );
+        }
+        else if ( root->left != NULL ) // same as above
+        {
+            Node *min = findMin ( root->left, cd );
+            copyPoint ( root->point, min->point );
+            root->right = deleteNodeRec ( root->left, min->point, depth + 1 );
+        }
+        else // If node to be deleted is leaf node
+        {
+            delete root;
+            return NULL;
+        }
+        return root;
+    }
+
+    // 2) If current node doesn't contain point, search downward
+    if ( point [ cd ] < root->point [ cd ] )
+        root->left = deleteNodeRec ( root->left, point, depth + 1 );
+    else
+        root->right = deleteNodeRec ( root->right, point, depth + 1 );
+    return root;
+}
+
+// Function to delete a given point from K D Tree with 'root'
+Node* deleteNode ( Node *root, int point [ ] ) {
+  // Pass depth as 0
+    return deleteNodeRec ( root, point, 0 );
+}
+
+// Driver program to test above functions
+int main8798797 ( ) {
+    struct Node *root = NULL;
+    int points [ ] [ k ] = { {30, 40}, {5, 25}, {70, 70},
+                      {10, 12}, {50, 30}, {35, 45} };
+
+    int n = sizeof ( points ) / sizeof ( points [ 0 ] );
+
+    for ( int i = 0; i < n; i++ )
+        root = insert ( root, points [ i ] );
+
+    // Delet (30, 40);
+    root = deleteNode ( root, points [ 0 ] );
+
+    cout << "Root after deletion of (30, 40)\n";
+    cout << root->point [ 0 ] << ", " << root->point [ 1 ] << endl;
+
+    return 0;
+}
+
+
+struct KDTree {
+
+    kdtree *ptree;
+
+    template<typename forward_it>
+    KDTree ( forward_it first_, forward_it last_ ) noexcept :
+        ptree { kd_create ( 2 ) } {
+        std::for_each ( first_, last_, [ this ] ( point & pos ) { kd_insertf ( ptree, ( const float * ) & pos, NULL ); } );
+    }
+
+    ~KDTree ( ) noexcept {
+        kd_free ( ptree );
+    }
+
+    [[ nodiscard ]] point find_nearest_pnt ( const point & pos_ ) const noexcept {
+        point pos;
+        struct kdres * res = kd_nearestf ( ptree, ( const float * ) & pos_ );
+        kd_res_itemf ( res, ( float * ) & pos );
+        kd_res_free ( res );
+        return pos;
+    }
+};
+
+int main ( ) {
+
+    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
+    std::uniform_real_distribution<float> disx { 0.0f, 40.0f };
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        constexpr int n = 100'000;
+
+        std::vector<point> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        KDTree tree ( std::begin ( points ), std::end ( points ) );
+        // i2dtree<point> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.find_nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        constexpr int n = 100'000;
+
+        std::vector<point> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        KDTree tree ( std::begin ( points ), std::end ( points ) );
+        // i2dtree<point> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.find_nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        constexpr int n = 100'000;
+
+        std::vector<point> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        // KDTree tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<point> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.find_nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        constexpr int n = 100'000;
+
+        std::vector<point> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        // KDTree tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<point> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.find_nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+    return EXIT_SUCCESS;
+}
