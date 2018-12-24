@@ -376,7 +376,7 @@ struct ikdtree {
             const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
             const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
             const std::pair z = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.z < b.z; } );
-            std::pair<base_type, std::int32_t> dx { x.second->x - x.first->x, 0 }, dy { x.second->y - x.first->y, 1 }, dz { x.second->z - x.first->z, 2 };
+            std::pair<base_type, std::int32_t> dx { x.second->x - x.first->x, 0 }, dy { y.second->y - y.first->y, 1 }, dz { z.second->z - z.first->z, 2 };
             if ( dx.first > dy.first )
                 std::swap ( dx, dy );
             if ( dx.first > dz.first )
