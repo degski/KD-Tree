@@ -450,7 +450,7 @@ struct i2dtree {
     container m_data;
     mutable nearest_data m_nearest;
     const_pointer m_leaf_start;
-    std::size_t m_dim_start;
+    void ( i2dtree::* nn_search ) ( const_pointer ) const noexcept;
 
     public:
 
@@ -459,14 +459,13 @@ struct i2dtree {
 
     i2dtree ( std::initializer_list<value_type> il_ ) noexcept :
         m_data { bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
-        m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 },
-        m_dim_start { pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) } {
+        m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 } {
         if ( il_.size ( ) ) {
             container points;
             std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
-            switch ( m_dim_start ) {
-            case 0: kd_construct_x  ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-            case 1: kd_construct_y  ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
+            switch ( pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) ) {
+            case 0: kd_construct_x ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i2dtree::nn_search_x; break;
+            case 1: kd_construct_y ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i2dtree::nn_search_y; break;
             }
         }
     }
@@ -474,12 +473,11 @@ struct i2dtree {
     template<typename forward_it>
     i2dtree ( forward_it first_, forward_it last_ ) noexcept :
         m_data { bin_tree_size<std::size_t> ( static_cast<std::size_t> ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
-        m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 },
-        m_dim_start { pick_dimension ( first_, last_ ) } {
+        m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 } {
         if ( first_ != last_ ) {
-            switch ( m_dim_start ) {
-            case 0: kd_construct_x  ( m_data.data ( ), first_, last_ ); break;
-            case 1: kd_construct_y  ( m_data.data ( ), first_, last_ ); break;
+            switch ( pick_dimension ( first_, last_ ) ) {
+            case 0: kd_construct_x  ( m_data.data ( ), first_, last_ ); nn_search = & i2dtree::nn_search_x; break;
+            case 1: kd_construct_y  ( m_data.data ( ), first_, last_ ); nn_search = & i2dtree::nn_search_y; break;
             }
         }
     }
@@ -489,10 +487,7 @@ struct i2dtree {
 
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
-        switch ( m_dim_start ) {
-        case 0: nn_search_x  ( m_data.data ( ) ); break;
-        case 1: nn_search_y  ( m_data.data ( ) ); break;
-        }
+        ( this->*nn_search ) ( m_data.data ( ) );
         return m_nearest.found;
     }
 
@@ -792,12 +787,12 @@ struct i3dtree {
             container points;
             std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
             switch ( pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) ) {
-            case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_xy; break;
-            case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_yz; break;
-            case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_zx; break;
-            case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_xz; break;
-            case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_yx; break;
-            case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_zy; break;
+            case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xy; break;
+            case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yz; break;
+            case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zx; break;
+            case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xz; break;
+            case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yx; break;
+            case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zy; break;
             }
         }
     }
@@ -809,12 +804,12 @@ struct i3dtree {
         m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 } {
         if ( first_ != last_ ) {
             switch ( pick_dimension ( first_, last_ ) ) {
-            case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_xy; break;
-            case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_yz; break;
-            case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_zx; break;
-            case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_xz; break;
-            case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_yx; break;
-            case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_zy; break;
+            case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xy; break;
+            case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yz; break;
+            case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zx; break;
+            case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xz; break;
+            case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yx; break;
+            case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zy; break;
             }
         }
     }
@@ -824,7 +819,7 @@ struct i3dtree {
 
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
-        nn_search ( m_data.data ( ) );
+        ( this->*nn_search ) ( m_data.data ( ) );
         return m_nearest.found;
     }
 
