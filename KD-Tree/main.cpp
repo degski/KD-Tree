@@ -341,19 +341,19 @@ class BinTree {
 
 // Implicit full binary tree.
 template<typename T>
-struct ikdtree {
+struct i2dtree {
 
     // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
 
 
-    using base_type = decltype ( T { }.x );
-    using value_type = T;
-    using pointer = T * ;
-    using reference = T & ;
-    using const_pointer = T const *;
-    using const_reference = T const &;
+    using base_type = T;
+    using value_type = sf::Vector2<T>;
+    using pointer = value_type * ;
+    using reference = value_type & ;
+    using const_pointer = value_type const *;
+    using const_reference = value_type const &;
 
-    using container = std::vector<T>;
+    using container = std::vector<value_type>;
     using iterator = typename container::iterator;
     using const_iterator = typename container::const_iterator;
 
@@ -367,24 +367,9 @@ struct ikdtree {
 
     template<typename forward_it>
     [[ nodiscard ]] std::size_t pick_dimension ( forward_it first_, forward_it last_ ) const noexcept {
-        if constexpr ( std::is_same<sf::Vector2f, T>::value ) {
-            const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
-            const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
-            return ( x.second->x - x.first->x ) < ( y.second->y - y.first->y );
-        }
-        if constexpr ( std::is_same<sf::Vector3f, T>::value ) {
-            const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
-            const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
-            const std::pair z = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.z < b.z; } );
-            std::pair<base_type, std::int32_t> dx { x.second->x - x.first->x, 0 }, dy { y.second->y - y.first->y, 1 }, dz { z.second->z - z.first->z, 2 };
-            if ( dx.first > dy.first )
-                std::swap ( dx, dy );
-            if ( dx.first > dz.first )
-                std::swap ( dx, dz );
-            if ( dy.first > dz.first )
-                std::swap ( dy, dz );
-            return dz.second;
-        }
+        const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
+        const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
+        return ( x.second->x - x.first->x ) < ( y.second->y - y.first->y );
     }
 
     [[ nodiscard ]] pointer left ( const pointer p_ ) const noexcept {
@@ -393,17 +378,11 @@ struct ikdtree {
     [[ nodiscard ]] pointer right ( const pointer p_ ) const noexcept {
         return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
     }
-    [[ nodiscard ]] pointer parent ( const pointer p_ ) const noexcept {
-        return const_cast<pointer> ( m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2 );
-    }
     [[ nodiscard ]] const_pointer left ( const const_pointer p_ ) const noexcept {
         return ( p_ + 1 ) + ( p_ - m_data.data ( ) );
     }
     [[ nodiscard ]] const_pointer right ( const const_pointer p_ ) const noexcept {
         return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
-    }
-    [[ nodiscard ]] const_pointer parent ( const const_pointer p_ ) const noexcept {
-        return m_data.data ( ) + ( p_ - m_data.data ( ) - 1 ) / 2;
     }
 
     [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
@@ -425,38 +404,14 @@ struct ikdtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
         *p_ = *median;
-        if ( first_ != median ) {
-            if constexpr ( std::is_same<sf::Vector2f, T>::value ) {
-                kd_construct_x ( left ( p_ ), first_, median );
-            }
-            if constexpr ( std::is_same<sf::Vector3f, T>::value ) {
-                kd_construct_z ( left ( p_ ), first_, median );
-            }
-        }
-        if ( ++median != last_ ) {
-            if constexpr ( std::is_same<sf::Vector2f, T>::value ) {
-                kd_construct_x ( right ( p_ ), median, last_ );
-            }
-            if constexpr ( std::is_same<sf::Vector3f, T>::value ) {
-                kd_construct_z ( right ( p_ ), median, last_ );
-            }
-        }
-    }
-    template<typename random_it>
-    void kd_construct_z ( const pointer p_, random_it first_, random_it last_ ) noexcept {
-        if constexpr ( std::is_same<sf::Vector3f, T>::value ) {
-            random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
-            std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.z < b.z; } );
-            *p_ = *median;
-            if ( first_ != median )
-                kd_construct_x ( left ( p_ ), first_, median );
-            if ( ++median != last_ )
-                kd_construct_x ( right ( p_ ), median, last_ );
-        }
+        if ( first_ != median )
+            kd_construct_x ( left ( p_ ), first_, median );
+        if ( ++median != last_ )
+            kd_construct_x ( right ( p_ ), median, last_ );
     }
 
     void nn_search_x ( const const_pointer p_ ) const noexcept {
-        base_type d = ikdtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = i2dtree::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -474,55 +429,21 @@ struct ikdtree {
         }
     }
     void nn_search_y ( const const_pointer p_ ) const noexcept {
-        base_type d = ikdtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = i2dtree::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
-            if constexpr ( std::is_same<sf::Vector2f, T>::value ) {
-                nn_search_x ( left ( p_ ) );
-                if ( ( ( d * d ) < m_nearest.min_distance ) )
-                    nn_search_x ( right ( p_ ) );
-            }
-            if constexpr ( std::is_same<sf::Vector3f, T>::value ) {
-                nn_search_z ( left ( p_ ) );
-                if ( ( ( d * d ) < m_nearest.min_distance ) )
-                    nn_search_z ( right ( p_ ) );
-            }
+            nn_search_x ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_x ( right ( p_ ) );
         }
         else {
-            if constexpr ( std::is_same<sf::Vector2f, T>::value ) {
-                nn_search_x ( right ( p_ ) );
-                if ( ( ( d * d ) < m_nearest.min_distance ) )
-                    nn_search_x ( left ( p_ ) );
-            }
-            if constexpr ( std::is_same<sf::Vector3f, T>::value ) {
-                nn_search_z ( right ( p_ ) );
-                if ( ( ( d * d ) < m_nearest.min_distance ) )
-                    nn_search_z ( left ( p_ ) );
-            }
-        }
-    }
-    void nn_search_z ( const const_pointer p_ ) const noexcept {
-        if constexpr ( std::is_same<sf::Vector3f, T>::value ) {
-            base_type d = ikdtree::distance_squared ( *p_, m_nearest.point );
-            if ( d < m_nearest.min_distance ) {
-                m_nearest.min_distance = d; m_nearest.found = p_;
-            }
-            if ( is_leaf ( p_ ) )
-                return;
-            if ( ( d = p_->z - m_nearest.point.z ) > base_type { 0 } ) {
+            nn_search_x ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
                 nn_search_x ( left ( p_ ) );
-                if ( ( ( d * d ) < m_nearest.min_distance ) )
-                    nn_search_x ( right ( p_ ) );
-            }
-            else {
-                nn_search_x ( right ( p_ ) );
-                if ( ( ( d * d ) < m_nearest.min_distance ) )
-                    nn_search_x ( left ( p_ ) );
-            }
         }
     }
 
@@ -533,10 +454,10 @@ struct ikdtree {
 
     public:
 
-    ikdtree ( const ikdtree & ) = delete;
-    ikdtree ( ikdtree && ) noexcept = delete;
+    i2dtree ( const i2dtree & ) = delete;
+    i2dtree ( i2dtree && ) noexcept = delete;
 
-    ikdtree ( std::initializer_list<T> il_ ) noexcept :
+    i2dtree ( std::initializer_list<value_type> il_ ) noexcept :
         m_data { bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
         m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 },
         m_dim_start { pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) } {
@@ -544,36 +465,33 @@ struct ikdtree {
             container points;
             std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
             switch ( m_dim_start ) {
-            case 0: kd_construct_x ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-            case 1: kd_construct_y ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-            case 2: kd_construct_z ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
+            case 0: kd_construct_x  ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
+            case 1: kd_construct_y  ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
             }
         }
     }
 
     template<typename forward_it>
-    ikdtree ( forward_it first_, forward_it last_ ) noexcept :
+    i2dtree ( forward_it first_, forward_it last_ ) noexcept :
         m_data { bin_tree_size<std::size_t> ( static_cast<std::size_t> ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
         m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 },
         m_dim_start { pick_dimension ( first_, last_ ) } {
         if ( first_ != last_ ) {
             switch ( m_dim_start ) {
-            case 0: kd_construct_x ( m_data.data ( ), first_, last_ ); break;
-            case 1: kd_construct_y ( m_data.data ( ), first_, last_ ); break;
-            case 2: kd_construct_z ( m_data.data ( ), first_, last_ ); break;
+            case 0: kd_construct_x  ( m_data.data ( ), first_, last_ ); break;
+            case 1: kd_construct_y  ( m_data.data ( ), first_, last_ ); break;
             }
         }
     }
 
-    ikdtree & operator = ( const ikdtree & ) = delete;
-    ikdtree & operator = ( ikdtree && ) noexcept = delete;
+    i2dtree & operator = ( const i2dtree & ) = delete;
+    i2dtree & operator = ( i2dtree && ) noexcept = delete;
 
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         switch ( m_dim_start ) {
-        case 0: nn_search_x ( m_data.data ( ) ); break;
-        case 1: nn_search_y ( m_data.data ( ) ); break;
-        case 2: nn_search_z ( m_data.data ( ) ); break;
+        case 0: nn_search_x  ( m_data.data ( ) ); break;
+        case 1: nn_search_y  ( m_data.data ( ) ); break;
         }
         return m_nearest.found;
     }
@@ -587,32 +505,15 @@ struct ikdtree {
     }
 
     [[ nodiscard ]] static constexpr base_type distance_squared ( const value_type & p1_, const value_type & p2_ ) noexcept {
-        if constexpr ( std::is_same<sf::Vector2f, T>::value ) {
-            return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
-        }
-        if constexpr ( std::is_same<sf::Vector3f, T>::value ) {
-            return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) + ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) ) );
-        }
+        return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
     }
 
     template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const ikdtree & tree_ ) noexcept {
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const i2dtree & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
         return out_;
-    }
-
-    void add_point ( const value_type & p_ ) {
-        if ( m_data.size ( ) == m_data.capacity ( ) ) {
-            m_data.resize ( ( m_data.size ( ) + 1 ) * 2 - 1, value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
-            m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
-        }
-        auto last = std::partition ( std::begin ( m_data ), std::end ( m_data ), [ ] ( const value_type & p ) { return p != value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }; } );
-        *last++ = p_;
-        ikdtree tmp { std::begin ( m_data ), last };
-        std::swap ( m_data, tmp.m_data );
-        m_dim_start = tmp.m_dim_start;
     }
 
     [[ nodiscard ]] static value_type nearest_linear_pnt ( const value_type & point_, const std::vector<value_type> & points_ ) noexcept {
@@ -631,10 +532,10 @@ struct ikdtree {
 
     // private:
 
-    template<typename T>
-    [[ nodiscard ]] static constexpr T bin_tree_size ( const T i_ ) noexcept {
+    template<typename U>
+    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
-        T p = 1;
+        U p = 1;
         while ( p < i_ ) {
             p += p + 1;
         }
@@ -643,9 +544,340 @@ struct ikdtree {
 };
 
 
+template<typename T>
+struct i3dtree {
+
+    // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
+
+
+    using base_type = T;
+    using value_type = sf::Vector3<T>;
+    using pointer = value_type * ;
+    using reference = value_type & ;
+    using const_pointer = value_type const *;
+    using const_reference = value_type const &;
+
+    using container = std::vector<value_type>;
+    using iterator = typename container::iterator;
+    using const_iterator = typename container::const_iterator;
+
+    private:
+
+    struct nearest_data {
+        value_type point;
+        const_pointer found;
+        base_type min_distance;
+    };
+
+    template<typename forward_it>
+    [[ nodiscard ]] std::size_t pick_dimension ( forward_it first_, forward_it last_ ) const noexcept {
+        const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
+        const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
+        const std::pair z = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.z < b.z; } );
+        std::pair<base_type, std::int32_t> dx { x.second->x - x.first->x, 0 }, dy { y.second->y - y.first->y, 1 }, dz { z.second->z - z.first->z, 2 };
+        // sort list of 3.
+        if ( dx.first < dy.first )
+            std::swap ( dx, dy );
+        if ( dx.first < dz.first )
+            std::swap ( dx, dz );
+        if ( dy.first < dz.first )
+            std::swap ( dy, dz );
+        // decide xyz- or xzy-order.
+        return ( ( dx.second == 0 and dy.second == 1 ) or ( dx.second == 1 and dy.second == 2 ) or ( dx.second == 2 and dy.second == 0 ) ) ? dx.second : 3 + dx.second;
+    }
+
+    [[ nodiscard ]] pointer left ( const pointer p_ ) const noexcept {
+        return ( p_ + 1 ) + ( p_ - m_data.data ( ) );
+    }
+    [[ nodiscard ]] pointer right ( const pointer p_ ) const noexcept {
+        return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
+    }
+    [[ nodiscard ]] const_pointer left ( const const_pointer p_ ) const noexcept {
+        return ( p_ + 1 ) + ( p_ - m_data.data ( ) );
+    }
+    [[ nodiscard ]] const_pointer right ( const const_pointer p_ ) const noexcept {
+        return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
+    }
+
+    [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
+        return m_leaf_start < p_;
+    }
+
+    template<typename random_it>
+    void kd_construct_xy ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+        random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
+        *p_ = *median;
+        if ( first_ != median )
+            kd_construct_yz ( left ( p_ ), first_, median );
+        if ( ++median != last_ )
+            kd_construct_yz ( right ( p_ ), median, last_ );
+    }
+    template<typename random_it>
+    void kd_construct_yz ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+        random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
+        *p_ = *median;
+        if ( first_ != median )
+            kd_construct_zx ( left ( p_ ), first_, median );
+        if ( ++median != last_ )
+            kd_construct_zx ( right ( p_ ), median, last_ );
+    }
+    template<typename random_it>
+    void kd_construct_zx ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+        random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.z < b.z; } );
+        *p_ = *median;
+        if ( first_ != median )
+            kd_construct_xy ( left ( p_ ), first_, median );
+        if ( ++median != last_ )
+            kd_construct_xy ( right ( p_ ), median, last_ );
+    }
+
+    template<typename random_it>
+    void kd_construct_xz ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+        random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
+        *p_ = *median;
+        if ( first_ != median )
+            kd_construct_zy ( left ( p_ ), first_, median );
+        if ( ++median != last_ )
+            kd_construct_zy ( right ( p_ ), median, last_ );
+    }
+    template<typename random_it>
+    void kd_construct_yx ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+        random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
+        *p_ = *median;
+        if ( first_ != median )
+            kd_construct_xz ( left ( p_ ), first_, median );
+        if ( ++median != last_ )
+            kd_construct_xz ( right ( p_ ), median, last_ );
+    }
+    template<typename random_it>
+    void kd_construct_zy ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+        random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
+        std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.z < b.z; } );
+        *p_ = *median;
+        if ( first_ != median )
+            kd_construct_yx ( left ( p_ ), first_, median );
+        if ( ++median != last_ )
+            kd_construct_yx ( right ( p_ ), median, last_ );
+    }
+
+    void nn_search_xy ( const const_pointer p_ ) const noexcept {
+        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        if ( d < m_nearest.min_distance ) {
+            m_nearest.min_distance = d; m_nearest.found = p_;
+        }
+        if ( is_leaf ( p_ ) )
+            return;
+        if ( ( d = p_->x - m_nearest.point.x ) > base_type { 0 } ) {
+            nn_search_yz ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_yz ( right ( p_ ) );
+        }
+        else {
+            nn_search_yz ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_yz ( left ( p_ ) );
+        }
+    }
+    void nn_search_yz ( const const_pointer p_ ) const noexcept {
+        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        if ( d < m_nearest.min_distance ) {
+            m_nearest.min_distance = d; m_nearest.found = p_;
+        }
+        if ( is_leaf ( p_ ) )
+            return;
+        if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
+            nn_search_zx ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_zx ( right ( p_ ) );
+        }
+        else {
+            nn_search_zx ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_zx ( left ( p_ ) );
+        }
+    }
+    void nn_search_zx ( const const_pointer p_ ) const noexcept {
+        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        if ( d < m_nearest.min_distance ) {
+            m_nearest.min_distance = d; m_nearest.found = p_;
+        }
+        if ( is_leaf ( p_ ) )
+            return;
+        if ( ( d = p_->z - m_nearest.point.z ) > base_type { 0 } ) {
+            nn_search_xy ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_xy ( right ( p_ ) );
+        }
+        else {
+            nn_search_xy ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_xy ( left ( p_ ) );
+        }
+    }
+
+    void nn_search_xz ( const const_pointer p_ ) const noexcept {
+        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        if ( d < m_nearest.min_distance ) {
+            m_nearest.min_distance = d; m_nearest.found = p_;
+        }
+        if ( is_leaf ( p_ ) )
+            return;
+        if ( ( d = p_->x - m_nearest.point.x ) > base_type { 0 } ) {
+            nn_search_zy ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_zy ( right ( p_ ) );
+        }
+        else {
+            nn_search_zy ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_zy ( left ( p_ ) );
+        }
+    }
+    void nn_search_yx ( const const_pointer p_ ) const noexcept {
+        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        if ( d < m_nearest.min_distance ) {
+            m_nearest.min_distance = d; m_nearest.found = p_;
+        }
+        if ( is_leaf ( p_ ) )
+            return;
+        if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
+            nn_search_xz ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_xz ( right ( p_ ) );
+        }
+        else {
+            nn_search_xz ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_xz ( left ( p_ ) );
+        }
+    }
+    void nn_search_zy ( const const_pointer p_ ) const noexcept {
+        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        if ( d < m_nearest.min_distance ) {
+            m_nearest.min_distance = d; m_nearest.found = p_;
+        }
+        if ( is_leaf ( p_ ) )
+            return;
+        if ( ( d = p_->z - m_nearest.point.z ) > base_type { 0 } ) {
+            nn_search_yx ( left ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_yx ( right ( p_ ) );
+        }
+        else {
+            nn_search_yx ( right ( p_ ) );
+            if ( ( ( d * d ) < m_nearest.min_distance ) )
+                nn_search_yx ( left ( p_ ) );
+        }
+    }
+
+    container m_data;
+    mutable nearest_data m_nearest;
+    const_pointer m_leaf_start;
+    void ( i3dtree::*nn_search ) ( const_pointer ) const noexcept;
+
+    public:
+
+    i3dtree ( const i3dtree & ) = delete;
+    i3dtree ( i3dtree && ) noexcept = delete;
+
+    i3dtree ( std::initializer_list<value_type> il_ ) noexcept :
+        m_data { bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
+        m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 } {
+        if ( il_.size ( ) ) {
+            container points;
+            std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
+            switch ( pick_dimension ( std::begin ( il_ ), std::end ( il_ ) ) ) {
+            case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_xy; break;
+            case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_yz; break;
+            case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_zx; break;
+            case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_xz; break;
+            case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_yx; break;
+            case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = this->nn_search_zy; break;
+            }
+        }
+    }
+
+
+    template<typename forward_it>
+    i3dtree ( forward_it first_, forward_it last_ ) noexcept :
+        m_data { bin_tree_size<std::size_t> ( static_cast< std::size_t > ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } },
+        m_leaf_start { m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1 } {
+        if ( first_ != last_ ) {
+            switch ( pick_dimension ( first_, last_ ) ) {
+            case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_xy; break;
+            case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_yz; break;
+            case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_zx; break;
+            case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_xz; break;
+            case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_yx; break;
+            case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_zy; break;
+            }
+        } 
+    }
+
+    i3dtree & operator = ( const i3dtree & ) = delete;
+    i3dtree & operator = ( i3dtree && ) noexcept = delete;
+
+    [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
+        m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
+        nn_search ( m_data.data ( ) );
+        return m_nearest.found;
+    }
+
+    [[ nodiscard ]] std::ptrdiff_t nearest_idx ( const value_type & point_ ) const noexcept {
+        return nearest_ptr ( point_ ) - m_data.data ( );
+    }
+
+    [[ nodiscard ]] value_type nearest_pnt ( const value_type & point_ ) const noexcept {
+        return *nearest_ptr ( point_ );
+    }
+
+    [[ nodiscard ]] static constexpr base_type distance_squared ( const value_type & p1_, const value_type & p2_ ) noexcept {
+        return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) + ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) ) );
+    }
+
+    template<typename Stream>
+    [ [ maybe_unused ] ] friend Stream & operator << ( Stream & out_, const i3dtree & tree_ ) noexcept {
+        for ( const auto & p : tree_.m_data ) {
+            out_ << p;
+        }
+        return out_;
+    }
+
+    [[ nodiscard ]] static value_type nearest_linear_pnt ( const value_type & point_, const std::vector<value_type> & points_ ) noexcept {
+        // Fastest up till 50 points.
+        const_pointer found = nullptr;
+        float min_distance = std::numeric_limits<float>::max ( );
+        for ( const auto & v : points_ ) {
+            const float d = distance_squared ( point_, v );
+            if ( d < min_distance ) {
+                found = &v;
+                min_distance = d;
+            }
+        }
+        return *found;
+    }
+
+    // private:
+
+    template<typename U>
+    [ [ nodiscard ] ] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+        assert ( i_ > 0 );
+        U p = 1;
+        while ( p < i_ ) {
+            p += p + 1;
+        }
+        return p;
+    }
+};
+
 int main687 ( ) {
     for ( int i = 1; i < 100; ++i ) {
-        std::cout << ikdtree<point2f>::bin_tree_size ( i ) << nl;
+        std::cout << i2dtree<point2f>::bin_tree_size ( i ) << nl;
     }
     return EXIT_SUCCESS;
 }
@@ -664,7 +896,7 @@ int wmain67878 ( ) {
 
     constexpr int n = 1'000;
 
-    using Tree = ikdtree<point2f>;
+    using Tree = i2dtree<float>;
 
     std::vector<point2f> points;
 
@@ -721,7 +953,7 @@ int wmain8797 ( ) {
 
         timer.start ( );
 
-        ikdtree<point2f> tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
@@ -738,10 +970,10 @@ int wmain8797 ( ) {
         timer.start ( );
         for ( int i = 0; i < cnt; ++i ) {
             const point2f p { disx ( rng ), disy ( rng ) };
-            bool r = tree.nearest_pnt ( p ) == ikdtree<point2f>::nearest_linear_pnt ( p, points );
+            bool r = tree.nearest_pnt ( p ) == i2dtree<float>::nearest_linear_pnt ( p, points );
             if ( not ( r ) ) {
-                const point2f p1 = tree.nearest_pnt ( p ), p2 = ikdtree<point2f>::nearest_linear_pnt ( p, points );
-                const float f1 = ikdtree<point2f>::distance_squared ( p, p1 ), f2 = ikdtree<point2f>::distance_squared ( p, p2 );
+                const point2f p1 = tree.nearest_pnt ( p ), p2 = i2dtree<float>::nearest_linear_pnt ( p, points );
+                const float f1 = i2dtree<float>::distance_squared ( p, p1 ), f2 = i2dtree<float>::distance_squared ( p, p2 );
                 if ( f1 == f2 ) {
                     continue;
                 }
@@ -753,7 +985,7 @@ int wmain8797 ( ) {
 
         std::cout << std::boolalpha << result << nl;
 
-        // std::cout << "nearest im " << found_impl << " " << ikdtree<point2f>::nearest_linear_pnt ( p, points ) << nl;
+        // std::cout << "nearest im " << found_impl << " " << i2dtree<point2f>::nearest_linear_pnt ( p, points ) << nl;
     }
 
     return EXIT_SUCCESS;
@@ -771,7 +1003,7 @@ int wmain897 ( ) {
     }
     std::cout << nl;
 
-    ikdtree<point2f> tree ( std::begin ( points ), std::end ( points ) );
+    i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << nl << tree << nl << nl;
 
@@ -782,26 +1014,8 @@ int wmain897 ( ) {
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << ikdtree<point2f>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << i2dtree<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
-
-    tree.add_point ( ptf );
-
-    std::cout << nl << tree << nl << nl;
-
-    std::cout << nl << nl << "nearest " << nl << tree.nearest_pnt ( point2f { 7.7f, 8.0f } ) << nl;
-
-    point2f ptf2 { 1.6f, 9.9f };
-
-    tree.add_point ( ptf2 );
-
-    std::cout << nl << tree << nl << nl;
-
-    point2f ptf3 { 4.1f, 6.0f };
-
-    tree.add_point ( ptf3 );
-
-    std::cout << nl << tree << nl << nl;
 
     return EXIT_SUCCESS;
 }
@@ -1030,7 +1244,7 @@ int main ( ) {
         timer.start ( );
 
         KDTree tree ( std::begin ( points ), std::end ( points ) );
-        // ikdtree<point2f> tree ( std::begin ( points ), std::end ( points ) );
+        // i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
@@ -1064,7 +1278,7 @@ int main ( ) {
         timer.start ( );
 
         KDTree tree ( std::begin ( points ), std::end ( points ) );
-        // ikdtree<point2f> tree ( std::begin ( points ), std::end ( points ) );
+        // i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
@@ -1098,7 +1312,7 @@ int main ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        ikdtree<point2f> tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
@@ -1132,7 +1346,7 @@ int main ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        ikdtree<point2f> tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
