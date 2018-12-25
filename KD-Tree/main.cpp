@@ -816,7 +816,7 @@ struct i3dtree {
             case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_yx; break;
             case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = this->nn_search_zy; break;
             }
-        } 
+        }
     }
 
     i3dtree & operator = ( const i3dtree & ) = delete;
