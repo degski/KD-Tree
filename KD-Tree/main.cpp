@@ -339,17 +339,16 @@ class BinTree {
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
 
-// Implicit full binary tree.
+// Implicit full binary tree of dimension 2.
 template<typename T>
 struct i2dtree {
 
     // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
 
-
     using base_type = T;
     using value_type = sf::Vector2<T>;
-    using pointer = value_type * ;
-    using reference = value_type & ;
+    using pointer = value_type *;
+    using reference = value_type &;
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
 
@@ -404,9 +403,9 @@ struct i2dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_   != median )
             kd_construct_x ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_x ( right ( p_ ), median, last_ );
     }
 
@@ -450,7 +449,7 @@ struct i2dtree {
     container m_data;
     mutable nearest_data m_nearest;
     const_pointer m_leaf_start;
-    void ( i2dtree::* nn_search ) ( const_pointer ) const noexcept;
+    void ( i2dtree::* nn_search ) ( const const_pointer ) const noexcept;
 
     public:
 
@@ -525,7 +524,7 @@ struct i2dtree {
         return * found;
     }
 
-    // private:
+    private:
 
     template<typename U>
     [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
@@ -539,16 +538,16 @@ struct i2dtree {
 };
 
 
+// Implicit full binary tree of dimension 3.
 template<typename T>
 struct i3dtree {
 
     // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
 
-
     using base_type = T;
     using value_type = sf::Vector3<T>;
-    using pointer = value_type * ;
-    using reference = value_type & ;
+    using pointer = value_type *;
+    using reference = value_type &;
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
 
@@ -603,9 +602,9 @@ struct i3dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_   != median )
             kd_construct_yz ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_yz ( right ( p_ ), median, last_ );
     }
     template<typename random_it>
@@ -613,9 +612,9 @@ struct i3dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_   != median )
             kd_construct_zx ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_zx ( right ( p_ ), median, last_ );
     }
     template<typename random_it>
@@ -623,9 +622,9 @@ struct i3dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.z < b.z; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_   != median )
             kd_construct_xy ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_xy ( right ( p_ ), median, last_ );
     }
 
@@ -634,9 +633,9 @@ struct i3dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_   != median )
             kd_construct_zy ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_zy ( right ( p_ ), median, last_ );
     }
     template<typename random_it>
@@ -644,9 +643,9 @@ struct i3dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_   != median )
             kd_construct_xz ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_xz ( right ( p_ ), median, last_ );
     }
     template<typename random_it>
@@ -654,9 +653,9 @@ struct i3dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.z < b.z; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_   != median )
             kd_construct_yx ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_yx ( right ( p_ ), median, last_ );
     }
 
@@ -773,7 +772,7 @@ struct i3dtree {
     container m_data;
     mutable nearest_data m_nearest;
     const_pointer m_leaf_start;
-    void ( i3dtree::*nn_search ) ( const_pointer ) const noexcept;
+    void ( i3dtree::* nn_search ) ( const const_pointer ) const noexcept;
 
     public:
 
@@ -836,7 +835,7 @@ struct i3dtree {
     }
 
     template<typename Stream>
-    [ [ maybe_unused ] ] friend Stream & operator << ( Stream & out_, const i3dtree & tree_ ) noexcept {
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const i3dtree & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
@@ -854,13 +853,13 @@ struct i3dtree {
                 min_distance = d;
             }
         }
-        return *found;
+        return * found;
     }
 
-    // private:
+    private:
 
     template<typename U>
-    [ [ nodiscard ] ] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         U p = 1;
         while ( p < i_ ) {
@@ -869,13 +868,6 @@ struct i3dtree {
         return p;
     }
 };
-
-int main687 ( ) {
-    for ( int i = 1; i < 100; ++i ) {
-        std::cout << i2dtree<point2f>::bin_tree_size ( i ) << nl;
-    }
-    return EXIT_SUCCESS;
-}
 
 /*
 
