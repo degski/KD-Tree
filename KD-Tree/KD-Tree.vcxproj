@@ -215,7 +215,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kdtree.h" />
-    <ClInclude Include="kd_tree.hpp" />
+    <ClInclude Include="ikdtree.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
