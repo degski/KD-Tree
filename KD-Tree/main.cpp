@@ -404,11 +404,11 @@ int main ( ) {
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 0.0f,  40.0f };
 
+    constexpr int n = 43;
+
     {
         plf::nanotimer timer;
         double st;
-
-        constexpr int n = 100'000;
 
         std::vector<point2f> points;
 
@@ -442,8 +442,6 @@ int main ( ) {
         plf::nanotimer timer;
         double st;
 
-        constexpr int n = 100'000;
-
         std::vector<point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
@@ -475,8 +473,6 @@ int main ( ) {
     {
         plf::nanotimer timer;
         double st;
-
-        constexpr int n = 100'000;
 
         std::vector<point2f> points;
 
@@ -509,8 +505,6 @@ int main ( ) {
     {
         plf::nanotimer timer;
         double st;
-
-        constexpr int n = 50;
 
         std::vector<point2f> points;
 

@@ -173,7 +173,7 @@ struct i2dtree {
     }
 
     void nn_search_linear ( ) const noexcept {
-        // Fastest up till 50 points.
+        // Fastest up till 44 points.
         for ( const auto & v : m_data ) {
             const base_type d = distance_squared ( m_nearest.point, v );
             if ( d < m_nearest.min_distance ) {
@@ -188,7 +188,7 @@ struct i2dtree {
     const_pointer m_leaf_start;
     std::size_t m_dim;
 
-    static constexpr std::size_t linear = 64u;
+    static constexpr std::size_t linear = 44u;
 
     public:
 
@@ -209,6 +209,7 @@ struct i2dtree {
                 }
             }
             else {
+                m_data.reserve ( il_size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
                 m_dim = 2u;
             }
@@ -228,6 +229,7 @@ struct i2dtree {
                 }
             }
             else {
+                m_data.reserve ( std::distance ( first_, last_ ) );
                 std::copy ( first_, last_, std::back_inserter ( m_data ) );
                 m_dim = 2u;
             }
@@ -519,7 +521,7 @@ struct i3dtree {
     }
 
     void nn_search_linear ( ) const noexcept {
-        // Fastest up till 50 points.
+        // Fastest up till 44 points.
         for ( const auto & v : m_data ) {
             const base_type d = distance_squared ( m_nearest.point, v );
             if ( d < m_nearest.min_distance ) {
@@ -534,7 +536,7 @@ struct i3dtree {
     const_pointer m_leaf_start;
     std::size_t m_dim;
 
-    static constexpr std::size_t linear = 64u;
+    static constexpr std::size_t linear = 44u;
     public:
 
     i3dtree ( const i3dtree & ) = delete;
@@ -558,6 +560,7 @@ struct i3dtree {
                 }
             }
             else {
+                m_data.reserve ( il_size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
                 m_dim = 6u;
             }
@@ -581,6 +584,7 @@ struct i3dtree {
                 }
             }
             else {
+                m_data.reserve ( std::distance ( first_, last_ ) );
                 std::copy ( first_, last_, std::back_inserter ( m_data ) );
                 m_dim = 6u;
             }
