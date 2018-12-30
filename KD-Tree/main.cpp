@@ -398,7 +398,7 @@ struct KDTree {
     }
 };
 
-int main ( ) {
+int main676786 ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
@@ -533,5 +533,149 @@ int main ( ) {
 
         std::cout << nl;
     }
+    return EXIT_SUCCESS;
+}
+
+
+
+
+int main ( ) {
+
+    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+
+    std::uniform_real_distribution<float> disy { 0.0f, 550.0f };
+    std::uniform_real_distribution<float> disz { 0.0f, 100.0f };
+    std::uniform_real_distribution<float> disx { 0.0f,  40.0f };
+
+    constexpr int n = 40;
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        // KDTree tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        // KDTree tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point3f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ), disz ( rng ) );
+        }
+
+        timer.start ( );
+
+        // KDTree tree ( std::begin ( points ), std::end ( points ) );
+        i3dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point3f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ), disz ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point3f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ), disz ( rng ) );
+        }
+
+        timer.start ( );
+
+        // KDTree tree ( std::begin ( points ), std::end ( points ) );
+        i3dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point3f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ), disz ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
     return EXIT_SUCCESS;
 }
