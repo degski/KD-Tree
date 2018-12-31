@@ -27,6 +27,10 @@ OF SUCH DAMAGE.
 #ifndef _KDTREE_H_
 #define _KDTREE_H_
 
+#ifndef __GNUC__
+#define NO_ALLOCA
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

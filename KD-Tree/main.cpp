@@ -375,6 +375,7 @@ int main8798797 ( ) {
 }
 
 
+
 struct KDTree {
 
     kdtree *ptree;
@@ -533,6 +534,7 @@ int main676786 ( ) {
 
         std::cout << nl;
     }
+
     return EXIT_SUCCESS;
 }
 
@@ -547,7 +549,7 @@ int main ( ) {
     std::uniform_real_distribution<float> disz { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 0.0f,  40.0f };
 
-    constexpr int n = 40;
+    constexpr int n = 100'000;
 
     {
         plf::nanotimer timer;

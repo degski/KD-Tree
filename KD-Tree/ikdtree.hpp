@@ -92,7 +92,7 @@ struct i2dtree {
     };
 
     template<typename forward_it>
-    [[ nodiscard ]] std::size_t pick_dimension ( forward_it first_, forward_it last_ ) const noexcept {
+    [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
         const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
         const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         return ( x.second->x - x.first->x ) < ( y.second->y - y.first->y );
@@ -175,7 +175,7 @@ struct i2dtree {
 
     void nn_search_linear ( ) const noexcept {
         // Fastest up till 44 points.
-        for ( const auto & v : m_data ) {
+        for ( auto && v : m_data ) {
             const base_type d = distance_squared ( m_nearest.point, v );
             if ( d < m_nearest.min_distance ) {
                 m_nearest.found = &v;
@@ -201,7 +201,7 @@ struct i2dtree {
             if ( il_.size ( ) > linear ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
-                m_dim = pick_dimension ( std::begin ( il_ ), std::end ( il_ ) );
+                m_dim = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
                 switch ( m_dim ) {
@@ -210,7 +210,7 @@ struct i2dtree {
                 }
             }
             else {
-                m_data.reserve ( il_size ( ) );
+                m_data.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
                 m_dim = 2u;
             }
@@ -223,7 +223,7 @@ struct i2dtree {
             if ( std::distance ( first_, last_ ) > linear ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
-                m_dim = pick_dimension ( first_, last_ );
+                m_dim = get_dimensions_order ( first_, last_ );
                 switch ( m_dim ) {
                 case 0: kd_construct_x ( m_data.data ( ), first_, last_ ); break;
                 case 1: kd_construct_y ( m_data.data ( ), first_, last_ ); break;
@@ -316,7 +316,7 @@ struct i3dtree {
     };
 
     template<typename forward_it>
-    [[ nodiscard ]] std::size_t pick_dimension ( forward_it first_, forward_it last_ ) const noexcept {
+    [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
         const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
         const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         const std::pair z = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.z < b.z; } );
@@ -521,7 +521,7 @@ struct i3dtree {
         }
     }
 
-    void nn_search_linear ( ) const noexcept {
+    void nn_search_linear ( const const_pointer ) const noexcept {
         // Fastest up till 44 points.
         for ( const auto & v : m_data ) {
             const base_type d = distance_squared ( m_nearest.point, v );
@@ -535,7 +535,7 @@ struct i3dtree {
     container m_data;
     mutable nearest_data m_nearest;
     const_pointer m_leaf_start;
-    std::size_t m_dim;
+    void ( i3dtree::*nn_search ) ( const const_pointer ) const noexcept;
 
     static constexpr std::size_t linear = 44u;
     public:
@@ -548,22 +548,21 @@ struct i3dtree {
             if ( il_.size ( ) > linear ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
-                m_dim = pick_dimension ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
-                switch ( m_dim ) {
-                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-                case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-                case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-                case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-                case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-                case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
+                switch ( get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) ) ) {
+                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zy; break;
                 }
             }
             else {
-                m_data.reserve ( il_size ( ) );
+                m_data.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
-                m_dim = 6u;
+                nn_search = & i3dtree::nn_search_linear;
             }
         }
     }
@@ -574,20 +573,19 @@ struct i3dtree {
             if ( std::distance ( first_, last_ ) > linear ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
-                m_dim = pick_dimension ( first_, last_ );
-                switch ( m_dim ) {
-                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); break;
-                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); break;
-                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); break;
-                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); break;
-                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); break;
-                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); break;
+                switch ( get_dimensions_order ( first_, last_ ) ) {
+                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zy; break;
                 }
             }
             else {
                 m_data.reserve ( std::distance ( first_, last_ ) );
                 std::copy ( first_, last_, std::back_inserter ( m_data ) );
-                m_dim = 6u;
+                nn_search = & i3dtree::nn_search_linear;
             }
         }
     }
@@ -597,15 +595,7 @@ struct i3dtree {
 
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
-        switch ( m_dim ) {
-        case 0: nn_search_xy ( m_data.data ( ) ); break;
-        case 1: nn_search_yz ( m_data.data ( ) ); break;
-        case 2: nn_search_zx ( m_data.data ( ) ); break;
-        case 3: nn_search_xz ( m_data.data ( ) ); break;
-        case 4: nn_search_yx ( m_data.data ( ) ); break;
-        case 5: nn_search_zy ( m_data.data ( ) ); break;
-        case 6: nn_search_linear ( ); break;
-        }
+        ( this->*nn_search ) ( m_data.data ( ) );
         return m_nearest.found;
     }
 
