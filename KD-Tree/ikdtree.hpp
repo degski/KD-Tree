@@ -40,7 +40,6 @@
 using point2f = sf::Vector2<float>;
 using point3f = sf::Vector3<float>;
 
-#include "kdtree.h"
 
 template<typename Stream>
 [[ maybe_unused ]] Stream & operator << ( Stream & out_, const point2f & p_ ) noexcept {

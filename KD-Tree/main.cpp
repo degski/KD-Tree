@@ -55,6 +55,7 @@ namespace fs = std::filesystem;
 #include <plf/plf_nanotimer.h>
 
 #include "ikdtree.hpp"
+#include "kdtree.h"
 
 #define nl '\n'
 
