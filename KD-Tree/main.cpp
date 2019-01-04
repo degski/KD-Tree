@@ -1,7 +1,7 @@
 
 // MIT License
 //
-// Copyright (c) 2018 degski
+// Copyright (c) 2018, 2019 degski
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,6 +43,12 @@
 #include <vector>
 
 namespace fs = std::filesystem;
+
+
+#include <spatial/idle_point_multimap.hpp>
+#include <spatial/idle_point_multiset.hpp>
+#include <spatial/neighbor_iterator.hpp>
+
 
 #include <SFML/System.hpp>
 #include <splitmix.hpp>
@@ -376,6 +382,18 @@ int main8798797 ( ) {
 
 
 
+using PointArray = std::array<float, 2>;
+using PointToID = spatial::idle_point_multiset<2, PointArray>;
+
+[[ nodiscard ]] PointArray toArray ( const point2f & v_ ) noexcept {
+    return *reinterpret_cast<const PointArray*> ( &v_ );
+}
+
+[[ nodiscard ]] point2f fromArray ( const PointArray & p_ ) noexcept {
+    return *reinterpret_cast<const point2f*> ( &p_ );
+}
+
+
 struct KDTree {
 
     kdtree *ptree;
@@ -541,7 +559,7 @@ int main676786 ( ) {
 
 
 
-int main ( ) {
+int main7687867 ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
 
@@ -680,4 +698,144 @@ int main ( ) {
     }
 
     return EXIT_SUCCESS;
+}
+
+
+int main ( ) {
+
+    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
+    std::uniform_real_distribution<float> disx { 0.0f,  40.0f };
+
+    constexpr int n = 100'000;
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        PointToID tree;
+
+        std::for_each ( std::begin ( points ), std::end ( points ), [ & tree ] ( point2f & p ) { tree.insert ( toArray ( p ) ); } );
+        tree.rebalance ( );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += fromArray ( * spatial::neighbor_begin ( tree, toArray ( { disx ( rng ), disy ( rng ) } ) ) );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        PointToID tree;
+
+        std::for_each ( std::begin ( points ), std::end ( points ), [ &tree ] ( point2f & p ) { tree.insert ( toArray ( p ) ); } );
+        tree.rebalance ( );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += fromArray ( *spatial::neighbor_begin ( tree, toArray ( { disx ( rng ), disy ( rng ) } ) ) );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
 }
