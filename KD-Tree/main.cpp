@@ -87,18 +87,16 @@ template<typename forward_it, typename value_type>
 }
 
 
-bool test ( ) noexcept {
+bool test ( const int n_ ) noexcept {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
 
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 20.0f, 40.0f };
 
-    constexpr int n = 100'000;
-
     std::vector<point2f> points;
 
-    for ( int i = 0; i < n; ++i ) {
+    for ( int i = 0; i < n_; ++i ) {
         points.emplace_back ( disx ( rng ), disy ( rng ) );
     }
 
@@ -114,9 +112,9 @@ bool test ( ) noexcept {
     return rv;
 }
 
-int main678678 ( ) {
+int main97907 ( ) {
 
-    std::cout << std::boolalpha << test ( ) << nl;
+    std::cout << std::boolalpha << test ( 1u < 18 ) << nl;
 
     return EXIT_SUCCESS;
 }
@@ -716,41 +714,10 @@ int main877989 ( ) {
 int main ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
-    std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
-    std::uniform_real_distribution<float> disx { 0.0f,  40.0f };
+    std::uniform_real_distribution<float> disy { 0.0f, 100'000.0f };
+    std::uniform_real_distribution<float> disx { 0.0f,  40'000.0f };
 
-    constexpr int n = 100'000;
-
-    {
-        plf::nanotimer timer;
-        double st;
-
-        std::vector<point2f> points;
-
-        for ( int i = 0; i < n; ++i ) {
-            points.emplace_back ( disx ( rng ), disy ( rng ) );
-        }
-
-        timer.start ( );
-
-        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
-
-        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
-
-        point2f ptf;
-
-        timer.start ( );
-
-        for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
-        }
-
-        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
-
-        std::cout << nl << nl << "nearest " << ptf << nl;
-
-        std::cout << nl;
-    }
+    constexpr int n = 1u << 18;
 
     {
         plf::nanotimer timer;
@@ -813,6 +780,39 @@ int main ( ) {
 
         std::cout << nl;
     }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    std::cout << std::boolalpha << test ( n ) << nl;
 
     return EXIT_SUCCESS;
 }

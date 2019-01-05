@@ -111,7 +111,7 @@ struct i2dtree {
     }
 
     [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
-        return m_leaf_start < p_;
+        return m_leaf_start < p_ or std::numeric_limits<base_type>::max ( ) == left ( p_ )->x;
     }
 
     template<typename random_it>
@@ -345,7 +345,7 @@ struct i3dtree {
     }
 
     [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
-        return m_leaf_start < p_;
+        return m_leaf_start < p_ or std::numeric_limits<base_type>::max ( ) == left ( p_ )->x;
     }
 
     template<typename random_it>
