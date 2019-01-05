@@ -62,21 +62,39 @@ namespace fs = std::filesystem;
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
 
-/*
 
-int wmain67878 ( ) {
+[[ nodiscard ]] constexpr auto nn_distance_squared ( const point2f & p1_, const point2f & p2_ ) noexcept {
+    return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
+}
+[[ nodiscard ]] constexpr auto nn_distance_squared ( const point3f & p1_, const point3f & p2_ ) noexcept {
+    return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) ) + ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) );
+}
 
-    splitmix64 rng;
-    std::uniform_int_distribution<std::size_t> dis { 1u, 1000u };
+template<typename forward_it, typename value_type>
+[[ nodiscard ]] value_type nn_search_linear ( forward_it first_, forward_it last_, const value_type & p_ ) noexcept {
+    using base_type = decltype ( p_.x );
+    base_type min_distance = std::numeric_limits<base_type>::max ( );
+    forward_it found = last_;
+    while ( first_ != last_ ) {
+        const base_type d = nn_distance_squared ( p_, * first_ );
+        if ( d < min_distance ) {
+            min_distance = d;
+            found = first_;
+        }
+        ++first_;
+    }
+    return * found;
+}
+
+
+bool test ( ) noexcept {
+
+    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
+
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
-    std::uniform_real_distribution<float> disx { 0.0f, 40.0f };
+    std::uniform_real_distribution<float> disx { 20.0f, 40.0f };
 
-    plf::nanotimer timer;
-    double st;
-
-    constexpr int n = 1'000;
-
-    using Tree = i2dtree<float>;
+    constexpr int n = 100'000;
 
     std::vector<point2f> points;
 
@@ -84,33 +102,26 @@ int wmain67878 ( ) {
         points.emplace_back ( disx ( rng ), disy ( rng ) );
     }
 
-    timer.start ( );
+    i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
-    Tree tree ( std::begin ( points ), std::end ( points ) );
+    bool rv = true;
 
-    std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+    for ( int i = 0; i < 1'000'000; ++i ) {
+        const point2f ptf { disx ( rng ), disy ( rng ) };
+        rv = rv and ( tree.nearest_pnt ( ptf ) == nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) );
+    }
 
-    std::size_t rv = 0u;
+    return rv;
+}
 
-    timer.start ( );
+int main678678 ( ) {
 
-    std::cout << "dfi   " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
-
-    std::cout << rv << nl;
-
-    return EXIT_SUCCESS;
-
-    point2f point2f { 60.0f, 20.5f };
-
-    const auto found = tree.nearest_recursive ( point2f );
-
-    std::cout << nl << "nearest " << found << nl;
+    std::cout << std::boolalpha << test ( ) << nl;
 
     return EXIT_SUCCESS;
 }
 
 
-*/
 
 int wmain8797 ( ) {
 
@@ -560,7 +571,7 @@ int main676786 ( ) {
 
 
 
-int main7687867 ( ) {
+int main877989 ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
 
@@ -722,10 +733,7 @@ int main ( ) {
 
         timer.start ( );
 
-        PointToID tree;
-
-        std::for_each ( std::begin ( points ), std::end ( points ), [ & tree ] ( point2f & p ) { tree.insert ( toArray ( p ) ); } );
-        tree.rebalance ( );
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
@@ -734,41 +742,7 @@ int main ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += fromArray ( * spatial::neighbor_begin ( tree, toArray ( { disx ( rng ), disy ( rng ) } ) ) );
-        }
-
-        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
-
-        std::cout << nl << nl << "nearest " << ptf << nl;
-
-        std::cout << nl;
-    }
-
-    {
-        plf::nanotimer timer;
-        double st;
-
-        std::vector<point2f> points;
-
-        for ( int i = 0; i < n; ++i ) {
-            points.emplace_back ( disx ( rng ), disy ( rng ) );
-        }
-
-        timer.start ( );
-
-        PointToID tree;
-
-        std::for_each ( std::begin ( points ), std::end ( points ), [ &tree ] ( point2f & p ) { tree.insert ( toArray ( p ) ); } );
-        tree.rebalance ( );
-
-        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
-
-        point2f ptf;
-
-        timer.start ( );
-
-        for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += fromArray ( *spatial::neighbor_begin ( tree, toArray ( { disx ( rng ), disy ( rng ) } ) ) );
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -839,4 +813,6 @@ int main ( ) {
 
         std::cout << nl;
     }
+
+    return EXIT_SUCCESS;
 }
