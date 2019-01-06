@@ -112,9 +112,9 @@ bool test ( const int n_ ) noexcept {
     return rv;
 }
 
-int main97907 ( ) {
+int main879789 ( ) {
 
-    std::cout << std::boolalpha << test ( 1u < 18 ) << nl;
+    std::cout << std::boolalpha << test ( 1u < 31 ) << nl;
 
     return EXIT_SUCCESS;
 }
@@ -184,7 +184,7 @@ int wmain8797 ( ) {
 
 
 
-int wmain897 ( ) {
+int wmain76786 ( ) {
 
     // std::vector<point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<point2f> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
@@ -194,7 +194,7 @@ int wmain897 ( ) {
     }
     std::cout << nl;
 
-    i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+    i2dtree2<float> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << nl << tree << nl << nl;
 
@@ -205,7 +205,7 @@ int wmain897 ( ) {
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << i2dtree<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << i2dtree2<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
@@ -793,7 +793,7 @@ int main ( ) {
 
         timer.start ( );
 
-        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree2<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
@@ -812,7 +812,116 @@ int main ( ) {
         std::cout << nl;
     }
 
-    std::cout << std::boolalpha << test ( n ) << nl;
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        i2dtree2<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+
+template<typename T, typename = std::enable_if_t<std::conjunction_v<std::is_integral<T>, std::is_unsigned<T>>>>
+void print_bits ( const T n ) noexcept {
+    int c = 0;
+    T i = T ( 1 ) << ( sizeof ( T ) * 8 - 1 );
+    while ( i ) {
+        putchar ( int ( ( n & i ) > 0 ) + int ( 48 ) );
+        if ( 0 == c or 8 == c ) {
+            putchar ( 32 );
+        }
+        i >>= 1;
+        ++c;
+    }
+}
+
+constexpr std::uint32_t bit1 = 0b0000'0000'0000'0000'0000'0000'0000'0001;
+constexpr std::uint32_t bits31 = ~bit1;
+
+union float_type {
+
+    float_type ( const float & num_ ) noexcept :
+        f ( num_ ) {
+    }
+    float_type ( float && num_ = 0.0f ) noexcept :
+        f ( std::move ( num_ ) ) {
+    }
+    float_type ( std::uint32_t && num_ = 0u ) noexcept :
+        i ( std::move ( num_ ) ) {
+    }
+
+    // Portable extraction of components.
+
+    bool is_negative ( ) const noexcept { return i & ( 1u << 31 ); }
+    std::uint32_t exponent ( ) const noexcept { return ( i >> 23 ) & 0xFF; }
+    std::uint32_t mantissa ( ) const noexcept { return i & ( ( 1 << 23 ) - 1 ); }
+
+    void tag ( ) noexcept {
+        i |= bit1;
+    }
+
+    void clear_low_bit ( ) noexcept {
+        i &= bits31;
+    }
+
+    template<typename Stream>
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const float_type & f_ ) noexcept {
+        print_bits ( f_.i );
+        std::cout << ' ' << f_.f;
+        return out_;
+    }
+
+    std::uint32_t i;
+    float f;
+};
+
+
+
+int main789789 ( ) {
+
+    float_type f { -22661.6516651175f };
+
+    std::cout << f.exponent ( ) << ' ' << f.mantissa ( ) << nl;
+
+    std::cout << f << nl;
+
+    f.tag ( );
+
+    std::cout << f.exponent ( ) << ' ' << f.mantissa ( ) << nl;
+
+    std::cout << f << nl;
+
+    float_type f2 { 0b1100'0001'1011'0110'0000'0000'0000'0001 };
+
+    std::cout << f2.exponent ( ) << ' ' << f2.mantissa ( ) << nl;
+
+    std::cout << f2 << nl;
 
     return EXIT_SUCCESS;
 }
