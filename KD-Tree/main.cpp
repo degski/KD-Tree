@@ -107,14 +107,18 @@ bool test ( const int n_ ) noexcept {
     for ( int i = 0; i < 1'000'000; ++i ) {
         const point2f ptf { disx ( rng ), disy ( rng ) };
         rv = rv and ( tree.nearest_pnt ( ptf ) == nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) );
+        if ( not ( rv ) ) {
+            std::cout << "fail\n";
+            exit ( 0 );
+        }
     }
 
     return rv;
 }
 
-int main879789 ( ) {
+int main ( ) {
 
-    std::cout << std::boolalpha << test ( 1u < 31 ) << nl;
+    std::cout << std::boolalpha << test ( 1'000'000 ) << nl;
 
     return EXIT_SUCCESS;
 }
@@ -711,7 +715,7 @@ int main877989 ( ) {
 }
 
 
-int wmain ( ) {
+int wmain89689678 ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100'000.0f };

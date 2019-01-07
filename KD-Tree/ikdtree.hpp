@@ -119,20 +119,22 @@ struct i2dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_ != median ) {
             kd_construct_y ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
-            kd_construct_y ( right ( p_ ), median, last_ );
+            if ( ++median != last_ )
+                kd_construct_y ( right ( p_ ), median, last_ );
+        }
     }
     template<typename random_it>
     void kd_construct_y ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_ != median ) {
             kd_construct_x ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
-            kd_construct_x ( right ( p_ ), median, last_ );
+            if ( ++median != last_ )
+                kd_construct_x ( right ( p_ ), median, last_ );
+        }
     }
 
     void nn_search_x ( const const_pointer p_ ) const noexcept {
@@ -353,30 +355,33 @@ struct i3dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_ != median ) {
             kd_construct_yz ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
-            kd_construct_yz ( right ( p_ ), median, last_ );
+            if ( ++median != last_ )
+                kd_construct_yz ( right ( p_ ), median, last_ );
+        }
     }
     template<typename random_it>
     void kd_construct_yz ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_ != median ) {
             kd_construct_zx ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
-            kd_construct_zx ( right ( p_ ), median, last_ );
+            if ( ++median != last_ )
+                kd_construct_zx ( right ( p_ ), median, last_ );
+        }
     }
     template<typename random_it>
     void kd_construct_zx ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.z < b.z; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_ != median ) {
             kd_construct_xy ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
-            kd_construct_xy ( right ( p_ ), median, last_ );
+            if ( ++median != last_ )
+                kd_construct_xy ( right ( p_ ), median, last_ );
+        }
     }
 
     template<typename random_it>
@@ -384,30 +389,33 @@ struct i3dtree {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_ != median ) {
             kd_construct_zy ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
-            kd_construct_zy ( right ( p_ ), median, last_ );
+            if ( ++median != last_ )
+                kd_construct_zy ( right ( p_ ), median, last_ );
+        }
     }
     template<typename random_it>
     void kd_construct_yx ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_ != median ) {
             kd_construct_xz ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
-            kd_construct_xz ( right ( p_ ), median, last_ );
+            if ( ++median != last_ )
+                kd_construct_xz ( right ( p_ ), median, last_ );
+        }
     }
     template<typename random_it>
     void kd_construct_zy ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.z < b.z; } );
         *p_ = *median;
-        if ( first_ != median )
+        if ( first_ != median ) {
             kd_construct_yx ( left ( p_ ), first_, median );
-        if ( ++median != last_ )
-            kd_construct_yx ( right ( p_ ), median, last_ );
+            if ( ++median != last_ )
+                kd_construct_yx ( right ( p_ ), median, last_ );
+        }
     }
 
     void nn_search_xy ( const const_pointer p_ ) const noexcept {
