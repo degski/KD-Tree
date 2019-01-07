@@ -631,10 +631,15 @@ struct i3dtree {
     template<typename U>
     [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
-        U p = 1;
-        while ( p < i_ ) {
-            p += p + 1;
+        if ( i_ > linear ) {
+            U p = 1;
+            while ( p < i_ ) {
+                p += p + 1;
+            }
+            return p;
         }
-        return p;
+        else {
+            return i_;
+        }
     }
 };
