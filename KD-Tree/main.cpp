@@ -100,7 +100,7 @@ bool test ( const int n_ ) noexcept {
         points.emplace_back ( disx ( rng ), disy ( rng ) );
     }
 
-    kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+    kdt::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
 
     bool rv = true;
 

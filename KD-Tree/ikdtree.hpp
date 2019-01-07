@@ -95,7 +95,7 @@ struct i2dtree {
     };
 
     template<typename forward_it>
-    [ [ nodiscard ] ] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
+    [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
         const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
         const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         return ( x.second->x - x.first->x ) < ( y.second->y - y.first->y );
@@ -279,7 +279,7 @@ struct i2dtree {
     private:
 
     template<typename U>
-    [ [ nodiscard ] ] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         if ( i_ > linear ) {
             U p = 1;
@@ -324,7 +324,7 @@ struct i3dtree {
     };
 
     template<typename forward_it>
-    [ [ nodiscard ] ] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
+    [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
         const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
         const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         const std::pair z = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.z < b.z; } );
@@ -638,7 +638,7 @@ struct i3dtree {
     private:
 
     template<typename U>
-    [ [ nodiscard ] ] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         if ( i_ > linear ) {
             U p = 1;
@@ -652,5 +652,8 @@ struct i3dtree {
         }
     }
 };
+
+template<typename base_type, std::size_t S>
+using ikdtree = typename std::conditional<2 == S, i2dtree<base_type>, typename std::conditional<3 == S, i3dtree<base_type>, std::false_type>::type>::type;
 
 }
