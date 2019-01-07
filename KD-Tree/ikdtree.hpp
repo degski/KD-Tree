@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <limits>
+#include <type_traits>
 
 #include <SFML/System.hpp>
 
@@ -47,7 +48,7 @@ template<typename Stream>
         out_ << '<' << p_.x << ' ' << p_.y << '>';
     }
     else {
-        out_ << "<x>";
+        out_ << "<* *>";
     }
     return out_;
 }
@@ -57,7 +58,7 @@ template<typename Stream>
         out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
     }
     else {
-        out_ << "<x>";
+        out_ << "<* * *>";
     }
     return out_;
 }
@@ -72,7 +73,7 @@ struct i2dtree {
 
     using base_type = T;
     using value_type = sf::Vector2<T>;
-    using pointer = value_type * ;
+    using pointer = value_type *;
     using reference = value_type & ;
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
@@ -83,6 +84,8 @@ struct i2dtree {
     using const_iterator = typename container::const_iterator;
 
     private:
+
+    static_assert ( std::is_same<value_type, point2f>::value, "point is non consistently defined" );
 
     struct nearest_data {
         value_type point;
@@ -190,7 +193,7 @@ struct i2dtree {
     const_pointer m_leaf_start;
     std::size_t m_dim;
 
-    static constexpr std::size_t linear = 44u;
+    static constexpr std::size_t linear = 4u;
 
     public:
 
@@ -204,7 +207,8 @@ struct i2dtree {
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
-                std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
+                points.reserve ( il_.size ( ) );
+                std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
                 switch ( m_dim ) {
                 case 0: kd_construct_x ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
                 case 1: kd_construct_y ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
@@ -222,7 +226,7 @@ struct i2dtree {
     i2dtree ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ != last_ ) {
             if ( std::distance ( first_, last_ ) > linear ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( first_, last_ );
                 switch ( m_dim ) {
@@ -298,7 +302,7 @@ struct i3dtree {
 
     using base_type = T;
     using value_type = sf::Vector3<T>;
-    using pointer = value_type * ;
+    using pointer = value_type *;
     using reference = value_type & ;
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
@@ -309,6 +313,8 @@ struct i3dtree {
     using const_iterator = typename container::const_iterator;
 
     private:
+
+    static_assert ( std::is_same<value_type, point3f>::value, "point is non consistently defined" );
 
     struct nearest_data {
         value_type point;
@@ -545,6 +551,7 @@ struct i3dtree {
     void ( i3dtree::*nn_search ) ( const const_pointer ) const noexcept;
 
     static constexpr std::size_t linear = 44u;
+
     public:
 
     i3dtree ( const i3dtree & ) = delete;
@@ -556,7 +563,8 @@ struct i3dtree {
                 m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 container points;
-                std::copy ( std::begin ( il_ ), std::end ( il_ ), std::begin ( points ) );
+                points.reserve ( il_.size ( ) );
+                std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
                 switch ( get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) ) ) {
                 case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xy; break;
                 case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yz; break;
@@ -578,7 +586,7 @@ struct i3dtree {
     i3dtree ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ != last_ ) {
             if ( std::distance ( first_, last_ ) > linear ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
                 case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xy; break;

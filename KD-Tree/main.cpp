@@ -116,7 +116,7 @@ bool test ( const int n_ ) noexcept {
     return rv;
 }
 
-int main ( ) {
+int main8978978 ( ) {
 
     std::cout << std::boolalpha << test ( 1'000'000 ) << nl;
 
@@ -188,7 +188,7 @@ int wmain8797 ( ) {
 
 
 
-int wmain9676 ( ) {
+int wmain ( ) {
 
     // std::vector<point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<point2f> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
@@ -198,7 +198,7 @@ int wmain9676 ( ) {
     }
     std::cout << nl;
 
-    i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+    i2dtree<float> tree { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     std::cout << nl << tree << nl << nl;
 
@@ -433,7 +433,7 @@ struct KDTree {
 
 int main676786 ( ) {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 0.0f,  40.0f };
 
@@ -575,7 +575,7 @@ int main676786 ( ) {
 
 int main877989 ( ) {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
 
     std::uniform_real_distribution<float> disy { 0.0f, 550.0f };
     std::uniform_real_distribution<float> disz { 0.0f, 100.0f };
@@ -715,9 +715,9 @@ int main877989 ( ) {
 }
 
 
-int wmain89689678 ( ) {
+int wmain89879 ( ) {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100'000.0f };
     std::uniform_real_distribution<float> disx { 0.0f,  40'000.0f };
 
