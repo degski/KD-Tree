@@ -636,21 +636,45 @@ template<typename base_type>
 struct node {
 
     sf::Vector2<base_type> value { std::numeric_limits<base_type> ::max ( ), std::numeric_limits<base_type>::max ( ) };
-    bool is_leaf = false;
+    bool is_leaf = true;
 
     node ( ) noexcept { }
+    node ( const node & n_ ) noexcept :
+        value ( n_.value ),
+        is_leaf ( n_.is_leaf ) {
+    }
+    node ( node && n_ ) noexcept :
+        value ( std::move ( n_.value ) ),
+        is_leaf ( std::move ( n_.is_leaf ) ) {
+    }
     node ( sf::Vector2<base_type> && p_ ) noexcept :
         value { std::move ( p_ ) } {
     }
     node ( const sf::Vector2<base_type> & p_ ) noexcept :
         value { p_ } {
     }
+    node ( const sf::Vector2<base_type> & p_, bool && il_ ) noexcept :
+        value ( p_  ),
+        is_leaf ( std::move ( il_ ) ) {
+    }
 
     [[ maybe_unused ]] node & operator = ( sf::Vector2<base_type> && p_ ) noexcept {
         value = std::move ( p_ );
+        return *this;
     }
     [[ maybe_unused ]] node & operator = ( const sf::Vector2<base_type> & p_ ) noexcept {
         value = p_;
+        return *this;
+    }
+    [[ maybe_unused ]] node & operator = ( const node & n_ ) noexcept {
+        value = n_.value;
+        is_leaf = n_.is_leaf;
+        return *this;
+    }
+    [[ maybe_unused ]] node & operator = ( node && n_ ) noexcept {
+        value = std::move ( n_.value );
+        is_leaf = std::move ( n_.is_leaf );
+        return *this;
     }
 };
 
@@ -705,24 +729,20 @@ struct i2dtree2 {
     void kd_construct_x ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
-        p_->value = *median;
-        if ( first_ != median )
+        *p_ = node<base_type> { *median, first_ == last_ };
+        if ( first_   != median )
             kd_construct_y ( left ( p_ ), first_, median );
-        else
-            p_->is_leaf = true;
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_y ( right ( p_ ), median, last_ );
     }
     template<typename random_it>
     void kd_construct_y ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
-        p_->value = *median;
-        if ( first_ != median )
+        *p_ = node<base_type> { *median, first_ == last_ };
+        if ( first_   != median )
             kd_construct_x ( left ( p_ ), first_, median );
-        else
-            p_->is_leaf = true;
-        if ( ++median != last_ )
+        if ( ++median != last_  )
             kd_construct_x ( right ( p_ ), median, last_ );
     }
 
