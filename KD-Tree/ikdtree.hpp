@@ -568,18 +568,18 @@ struct i3dtree {
                 points.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
                 switch ( get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) ) ) {
-                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_xy; break;
-                case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_yz; break;
-                case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_zx; break;
-                case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_xz; break;
-                case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_yx; break;
-                case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_zy; break;
+                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zy; break;
                 }
             }
             else {
                 m_data.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
-                nn_search = &i3dtree::nn_search_linear;
+                nn_search = & i3dtree::nn_search_linear;
             }
         }
     }
@@ -592,18 +592,18 @@ struct i3dtree {
                 m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
-                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_xy; break;
-                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_yz; break;
-                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_zx; break;
-                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_xz; break;
-                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_yx; break;
-                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_zy; break;
+                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zy; break;
                 }
             }
             else {
                 m_data.reserve ( n );
                 std::copy ( first_, last_, std::back_inserter ( m_data ) );
-                nn_search = &i3dtree::nn_search_linear;
+                nn_search = & i3dtree::nn_search_linear;
             }
         }
     }
