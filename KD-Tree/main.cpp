@@ -184,7 +184,7 @@ int wmain8797 ( ) {
 
 
 
-int wmain76786 ( ) {
+int wmain9676 ( ) {
 
     // std::vector<point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<point2f> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
@@ -194,7 +194,7 @@ int wmain76786 ( ) {
     }
     std::cout << nl;
 
-    i2dtree2<float> tree ( std::begin ( points ), std::end ( points ) );
+    i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
     std::cout << nl << tree << nl << nl;
 
@@ -205,7 +205,7 @@ int wmain76786 ( ) {
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << i2dtree2<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << i2dtree<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
@@ -711,13 +711,13 @@ int main877989 ( ) {
 }
 
 
-int main ( ) {
+int wmain ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100'000.0f };
     std::uniform_real_distribution<float> disx { 0.0f,  40'000.0f };
 
-    constexpr int n = 1u << 18;
+    constexpr int n = 100'000;
 
     {
         plf::nanotimer timer;
@@ -793,7 +793,7 @@ int main ( ) {
 
         timer.start ( );
 
-        i2dtree2<float> tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
@@ -824,7 +824,38 @@ int main ( ) {
 
         timer.start ( );
 
-        i2dtree2<float> tree ( std::begin ( points ), std::end ( points ) );
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        point2f ptf;
+
+        timer.start ( );
+
+        for ( int i = 0; i < 1'000'000; ++i ) {
+            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        }
+
+        std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        std::cout << nl << nl << "nearest " << ptf << nl;
+
+        std::cout << nl;
+    }
+
+    {
+        plf::nanotimer timer;
+        double st;
+
+        std::vector<point2f> points;
+
+        for ( int i = 0; i < n; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+
+        i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
