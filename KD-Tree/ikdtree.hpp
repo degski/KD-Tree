@@ -37,14 +37,15 @@
 
 // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
 
+namespace kdt {
 
 using point2f = sf::Vector2<float>;
 using point3f = sf::Vector3<float>;
-
+}
 
 template<typename Stream>
-[[ maybe_unused ]] Stream & operator << ( Stream & out_, const point2f & p_ ) noexcept {
-    if ( point2f { std::numeric_limits<decltype ( p_.x )>::max ( ), std::numeric_limits<decltype ( p_.y )>::max ( ) } != p_ ) {
+[[ maybe_unused ]] Stream & operator << ( Stream & out_, const kdt::point2f & p_ ) noexcept {
+    if ( kdt::point2f { std::numeric_limits<decltype ( p_.x )>::max ( ), std::numeric_limits<decltype ( p_.y )>::max ( ) } != p_ ) {
         out_ << '<' << p_.x << ' ' << p_.y << '>';
     }
     else {
@@ -53,8 +54,8 @@ template<typename Stream>
     return out_;
 }
 template<typename Stream>
-[[ maybe_unused ]] Stream & operator << ( Stream & out_, const point3f & p_ ) noexcept {
-    if ( point3f { std::numeric_limits<decltype ( p_.x )>::max ( ), std::numeric_limits<decltype ( p_.y )>::max ( ), std::numeric_limits<decltype ( p_.z )>::max ( ) } != p_ ) {
+[[ maybe_unused ]] Stream & operator << ( Stream & out_, const kdt::point3f & p_ ) noexcept {
+    if ( kdt::point3f { std::numeric_limits<decltype ( p_.x )>::max ( ), std::numeric_limits<decltype ( p_.y )>::max ( ), std::numeric_limits<decltype ( p_.z )>::max ( ) } != p_ ) {
         out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
     }
     else {
@@ -63,7 +64,7 @@ template<typename Stream>
     return out_;
 }
 
-
+namespace kdt {
 
 // Implicit full binary tree of dimension 2.
 template<typename T>
@@ -73,7 +74,7 @@ struct i2dtree {
 
     using base_type = T;
     using value_type = sf::Vector2<T>;
-    using pointer = value_type *;
+    using pointer = value_type * ;
     using reference = value_type & ;
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
@@ -94,7 +95,7 @@ struct i2dtree {
     };
 
     template<typename forward_it>
-    [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
+    [ [ nodiscard ] ] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
         const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
         const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         return ( x.second->x - x.first->x ) < ( y.second->y - y.first->y );
@@ -226,7 +227,7 @@ struct i2dtree {
     i2dtree ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ != last_ ) {
             if ( std::distance ( first_, last_ ) > linear ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( first_, last_ );
                 switch ( m_dim ) {
@@ -268,7 +269,7 @@ struct i2dtree {
     }
 
     template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const i2dtree & tree_ ) noexcept {
+    [ [ maybe_unused ] ] friend Stream & operator << ( Stream & out_, const i2dtree & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
@@ -278,7 +279,7 @@ struct i2dtree {
     private:
 
     template<typename U>
-    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [ [ nodiscard ] ] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         if ( i_ > linear ) {
             U p = 1;
@@ -302,7 +303,7 @@ struct i3dtree {
 
     using base_type = T;
     using value_type = sf::Vector3<T>;
-    using pointer = value_type *;
+    using pointer = value_type * ;
     using reference = value_type & ;
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
@@ -323,7 +324,7 @@ struct i3dtree {
     };
 
     template<typename forward_it>
-    [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
+    [ [ nodiscard ] ] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
         const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
         const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
         const std::pair z = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.z < b.z; } );
@@ -566,18 +567,18 @@ struct i3dtree {
                 points.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
                 switch ( get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) ) ) {
-                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xy; break;
-                case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yz; break;
-                case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zx; break;
-                case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xz; break;
-                case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yx; break;
-                case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zy; break;
+                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = &i3dtree::nn_search_zy; break;
                 }
             }
             else {
                 m_data.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
-                nn_search = & i3dtree::nn_search_linear;
+                nn_search = &i3dtree::nn_search_linear;
             }
         }
     }
@@ -586,21 +587,21 @@ struct i3dtree {
     i3dtree ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ != last_ ) {
             if ( std::distance ( first_, last_ ) > linear ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( std::distance ( first_, last_ ) ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
-                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xy; break;
-                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yz; break;
-                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zx; break;
-                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xz; break;
-                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yx; break;
-                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zy; break;
+                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = &i3dtree::nn_search_zy; break;
                 }
             }
             else {
                 m_data.reserve ( std::distance ( first_, last_ ) );
                 std::copy ( first_, last_, std::back_inserter ( m_data ) );
-                nn_search = & i3dtree::nn_search_linear;
+                nn_search = &i3dtree::nn_search_linear;
             }
         }
     }
@@ -627,7 +628,7 @@ struct i3dtree {
     }
 
     template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const i3dtree & tree_ ) noexcept {
+    [ [ maybe_unused ] ] friend Stream & operator << ( Stream & out_, const i3dtree & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
@@ -637,7 +638,7 @@ struct i3dtree {
     private:
 
     template<typename U>
-    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [ [ nodiscard ] ] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         if ( i_ > linear ) {
             U p = 1;
@@ -651,3 +652,5 @@ struct i3dtree {
         }
     }
 };
+
+}
