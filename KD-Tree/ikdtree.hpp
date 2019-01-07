@@ -65,11 +65,9 @@ template<typename Stream>
 
 namespace kdt {
 
-// Implicit full binary tree of dimension 2.
+// Implicit KD full binary tree of dimension 2.
 template<typename T>
 struct i2dtree {
-
-    // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
 
     using base_type = T;
     using value_type = sf::Vector2<T>;
@@ -192,7 +190,7 @@ struct i2dtree {
     std::size_t m_dim;
     mutable nearest_data m_nearest;
 
-    static constexpr std::size_t linear = 44u;
+    static constexpr std::size_t m_linear_bound = 44u;
 
     public:
 
@@ -201,7 +199,7 @@ struct i2dtree {
 
     i2dtree ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
-            if ( il_.size ( ) > linear ) {
+            if ( il_.size ( ) > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
@@ -225,7 +223,7 @@ struct i2dtree {
     i2dtree ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
-            if ( n > linear ) {
+            if ( n > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( first_, last_ );
@@ -280,7 +278,7 @@ struct i2dtree {
     template<typename U>
     [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
-        if ( i_ > linear ) {
+        if ( i_ > m_linear_bound ) {
             U p = 1;
             while ( p < i_ ) {
                 p += p + 1;
@@ -294,11 +292,9 @@ struct i2dtree {
 };
 
 
-// Implicit full binary tree of dimension 3.
+// Implicit KD full binary tree of dimension 3.
 template<typename T>
 struct i3dtree {
-
-    // https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
 
     using base_type = T;
     using value_type = sf::Vector3<T>;
@@ -549,7 +545,7 @@ struct i3dtree {
     void ( i3dtree::*nn_search ) ( const const_pointer ) const noexcept;
     mutable nearest_data m_nearest;
 
-    static constexpr std::size_t linear = 44u;
+    static constexpr std::size_t m_linear_bound = 44u;
 
     public:
 
@@ -558,7 +554,7 @@ struct i3dtree {
 
     i3dtree ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
-            if ( il_.size ( ) > linear ) {
+            if ( il_.size ( ) > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 container points;
@@ -585,7 +581,7 @@ struct i3dtree {
     i3dtree ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
-            if ( n > linear ) {
+            if ( n > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
@@ -639,7 +635,7 @@ struct i3dtree {
     template<typename U>
     [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
-        if ( i_ > linear ) {
+        if ( i_ > m_linear_bound ) {
             U p = 1;
             while ( p < i_ ) {
                 p += p + 1;
