@@ -28,7 +28,6 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include <iostream>
 #include <limits>
 #include <type_traits>
 
@@ -74,8 +73,8 @@ struct i2dtree {
 
     using base_type = T;
     using value_type = sf::Vector2<T>;
-    using pointer = value_type * ;
-    using reference = value_type & ;
+    using pointer = value_type *;
+    using reference = value_type &;
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
 
@@ -115,7 +114,7 @@ struct i2dtree {
     }
 
     [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
-        return m_leaf_start < p_ or std::numeric_limits<base_type>::max ( ) == left ( p_ )->x;
+        return ( m_leaf_start < p_ ) or ( std::numeric_limits<base_type>::max ( ) == left ( p_ )->x );
     }
 
     template<typename random_it>
@@ -179,7 +178,6 @@ struct i2dtree {
     }
 
     void nn_search_linear ( ) const noexcept {
-        // Fastest up till 44 points.
         for ( auto && v : m_data ) {
             const base_type d = distance_squared ( m_nearest.point, v );
             if ( d < m_nearest.min_distance ) {
@@ -190,9 +188,9 @@ struct i2dtree {
     }
 
     container m_data;
-    mutable nearest_data m_nearest;
     const_pointer m_leaf_start;
     std::size_t m_dim;
+    mutable nearest_data m_nearest;
 
     static constexpr std::size_t linear = 44u;
 
@@ -355,7 +353,7 @@ struct i3dtree {
     }
 
     [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
-        return m_leaf_start < p_ or std::numeric_limits<base_type>::max ( ) == left ( p_ )->x;
+        return ( m_leaf_start < p_ ) or ( std::numeric_limits<base_type>::max ( ) == left ( p_ )->x );
     }
 
     template<typename random_it>
@@ -537,7 +535,6 @@ struct i3dtree {
     }
 
     void nn_search_linear ( const const_pointer ) const noexcept {
-        // Fastest up till 44 points.
         for ( const auto & v : m_data ) {
             const base_type d = distance_squared ( m_nearest.point, v );
             if ( d < m_nearest.min_distance ) {
@@ -548,11 +545,11 @@ struct i3dtree {
     }
 
     container m_data;
-    mutable nearest_data m_nearest;
     const_pointer m_leaf_start;
     void ( i3dtree::*nn_search ) ( const const_pointer ) const noexcept;
+    mutable nearest_data m_nearest;
 
-    static constexpr std::size_t linear = 44;
+    static constexpr std::size_t linear = 44u;
 
     public:
 
@@ -655,7 +652,19 @@ struct i3dtree {
     }
 };
 
+namespace detail {
+
+template<std::size_t S>
+struct message {
+
+    template<typename ... Args>
+    message ( Args ... ) {
+        static_assert ( not ( 2 == S or 3 == S ), "2 or 3 dimensions only" );
+    }
+};
+}
+
 template<typename base_type, std::size_t S>
-using ikdtree = typename std::conditional<2 == S, i2dtree<base_type>, typename std::conditional<3 == S, i3dtree<base_type>, std::false_type>::type>::type;
+using ikdtree = typename std::conditional<2 == S, i2dtree<base_type>, typename std::conditional<3 == S, i3dtree<base_type>, detail::message<S>>::type>::type;
 
 }
