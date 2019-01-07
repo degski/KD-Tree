@@ -86,7 +86,7 @@ struct i2dtree {
 
     private:
 
-    static_assert ( std::is_same<value_type, point2f>::value, "point is non consistently defined" );
+    static_assert ( std::is_same<value_type, point2f>::value, "point is not consistently defined" );
 
     struct nearest_data {
         value_type point;
@@ -194,7 +194,7 @@ struct i2dtree {
     const_pointer m_leaf_start;
     std::size_t m_dim;
 
-    static constexpr std::size_t linear = 4u;
+    static constexpr std::size_t linear = 44u;
 
     public:
 
@@ -315,7 +315,7 @@ struct i3dtree {
 
     private:
 
-    static_assert ( std::is_same<value_type, point3f>::value, "point is non consistently defined" );
+    static_assert ( std::is_same<value_type, point3f>::value, "point is not consistently defined" );
 
     struct nearest_data {
         value_type point;
