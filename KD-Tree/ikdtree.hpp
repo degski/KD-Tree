@@ -42,14 +42,14 @@ struct Point2 {
     value_type x, y;
 
     Point2 ( ) noexcept = default;
-    Point2 ( const Point2 & p_ ) noexcept = default;
-    Point2 ( Point2 && p_ ) noexcept = default;
+    Point2 ( const Point2 & ) noexcept = default;
+    Point2 ( Point2 && ) noexcept = default;
     Point2 ( value_type && x_, value_type && y_ ) noexcept :
         x { std::move ( x_ ) }, y { std::move ( y_ ) } {
     }
 
-    [[ maybe_unused ]] Point2 & operator = ( const Point2 & p_ ) noexcept = default;
-    [[ maybe_unused ]] Point2 & operator = ( Point2 && p_ ) noexcept = default;
+    [[ maybe_unused ]] Point2 & operator = ( const Point2 & ) noexcept = default;
+    [[ maybe_unused ]] Point2 & operator = ( Point2 && ) noexcept = default;
 
     [[ nodiscard ]] bool operator == ( const Point2 & p_ ) const noexcept {
         return x == p_.x and y == p_.y;
@@ -87,14 +87,14 @@ struct Point3 {
     value_type x, y, z;
 
     Point3 ( ) noexcept = default;
-    Point3 ( const Point3 & p_ ) noexcept = default;
-    Point3 ( Point3 && p_ ) noexcept = default;
+    Point3 ( const Point3 & ) noexcept = default;
+    Point3 ( Point3 && ) noexcept = default;
     Point3 ( value_type && x_, value_type && y_, value_type && z_ ) noexcept :
         x { std::move ( x_ ) }, y { std::move ( y_ ) }, z { std::move ( z_ ) } {
     }
 
-    [[ maybe_unused ]] Point3 & operator = ( const Point3 & p_ ) noexcept = default;
-    [[ maybe_unused ]] Point3 & operator = ( Point3 && p_ ) noexcept = default;
+    [[ maybe_unused ]] Point3 & operator = ( const Point3 & ) noexcept = default;
+    [[ maybe_unused ]] Point3 & operator = ( Point3 && ) noexcept = default;
 
     [[ nodiscard ]] bool operator == ( const Point3 & p_ ) const noexcept {
         return x == p_.x and y == p_.y and z == p_.z;
