@@ -32,44 +32,44 @@
 #include <type_traits>
 
 
-namespace kdt {
+namespace kd {
 
 template<typename T>
-struct point2 {
+struct Point2 {
 
     using value_type = T;
 
     value_type x, y;
 
-    point2 ( ) noexcept = default;
-    point2 ( const point2 & p_ ) noexcept = default;
-    point2 ( point2 && p_ ) noexcept = default;
-    point2 ( value_type && x_, value_type && y_ ) noexcept :
+    Point2 ( ) noexcept = default;
+    Point2 ( const Point2 & p_ ) noexcept = default;
+    Point2 ( Point2 && p_ ) noexcept = default;
+    Point2 ( value_type && x_, value_type && y_ ) noexcept :
         x { std::move ( x_ ) }, y { std::move ( y_ ) } {
     }
 
-    [[ maybe_unused ]] point2 & operator = ( const point2 & p_ ) noexcept = default;
-    [[ maybe_unused ]] point2 & operator = ( point2 && p_ ) noexcept = default;
+    [[ maybe_unused ]] Point2 & operator = ( const Point2 & p_ ) noexcept = default;
+    [[ maybe_unused ]] Point2 & operator = ( Point2 && p_ ) noexcept = default;
 
-    [[ nodiscard ]] bool operator == ( const point2 & p_ ) const noexcept {
+    [[ nodiscard ]] bool operator == ( const Point2 & p_ ) const noexcept {
         return x == p_.x and y == p_.y;
     }
-    [[ nodiscard ]] bool operator != ( const point2 & p_ ) const noexcept {
+    [[ nodiscard ]] bool operator != ( const Point2 & p_ ) const noexcept {
         return x != p_.x or y != p_.y;
     }
 
-    [[ maybe_unused ]] point2 & operator += ( const point2 & p_ ) noexcept {
+    [[ maybe_unused ]] Point2 & operator += ( const Point2 & p_ ) noexcept {
         x += p_.x; y += p_.y;
         return *this;
     }
-    [[ maybe_unused ]] point2 & operator -= ( const point2 & p_ ) noexcept {
+    [[ maybe_unused ]] Point2 & operator -= ( const Point2 & p_ ) noexcept {
         x -= p_.x; y -= p_.y;
         return *this;
     }
 
     template<typename stream>
-    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const point2 & p_ ) noexcept {
-        if ( point2 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ ) {
+    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Point2 & p_ ) noexcept {
+        if ( Point2 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ ) {
             out_ << '<' << p_.x << ' ' << p_.y << '>';
         }
         else {
@@ -80,41 +80,41 @@ struct point2 {
 };
 
 template<typename T>
-struct point3 {
+struct Point3 {
 
     using value_type = T;
 
     value_type x, y, z;
 
-    point3 ( ) noexcept = default;
-    point3 ( const point3 & p_ ) noexcept = default;
-    point3 ( point3 && p_ ) noexcept = default;
-    point3 ( value_type && x_, value_type && y_, value_type && z_ ) noexcept :
+    Point3 ( ) noexcept = default;
+    Point3 ( const Point3 & p_ ) noexcept = default;
+    Point3 ( Point3 && p_ ) noexcept = default;
+    Point3 ( value_type && x_, value_type && y_, value_type && z_ ) noexcept :
         x { std::move ( x_ ) }, y { std::move ( y_ ) }, z { std::move ( z_ ) } {
     }
 
-    [[ maybe_unused ]] point3 & operator = ( const point3 & p_ ) noexcept = default;
-    [[ maybe_unused ]] point3 & operator = ( point3 && p_ ) noexcept = default;
+    [[ maybe_unused ]] Point3 & operator = ( const Point3 & p_ ) noexcept = default;
+    [[ maybe_unused ]] Point3 & operator = ( Point3 && p_ ) noexcept = default;
 
-    [[ nodiscard ]] bool operator == ( const point3 & p_ ) const noexcept {
+    [[ nodiscard ]] bool operator == ( const Point3 & p_ ) const noexcept {
         return x == p_.x and y == p_.y and z == p_.z;
     }
-    [[ nodiscard ]] bool operator != ( const point3 & p_ ) const noexcept {
+    [[ nodiscard ]] bool operator != ( const Point3 & p_ ) const noexcept {
         return x != p_.x or y != p_.y or z != p_.z;
     }
 
-    [[ maybe_unused ]] point3 & operator += ( const point3 & p_ ) noexcept {
+    [[ maybe_unused ]] Point3 & operator += ( const Point3 & p_ ) noexcept {
         x += p_.x; y += p_.y; z += p_.z;
         return *this;
     }
-    [[ maybe_unused ]] point3 & operator -= ( const point3 & p_ ) noexcept {
+    [[ maybe_unused ]] Point3 & operator -= ( const Point3 & p_ ) noexcept {
         x -= p_.x; y -= p_.y; z -= p_.z;
         return *this;
     }
 
     template<typename stream>
-    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const point3 & p_ ) noexcept {
-        if ( point3 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ ) {
+    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Point3 & p_ ) noexcept {
+        if ( Point3 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ ) {
             out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
         }
         else {
@@ -125,16 +125,16 @@ struct point3 {
 };
 
 
-using point2f = point2<float>;
-using point2d = point2<double>;
+using Point2f = Point2<float>;
+using Point2d = Point2<double>;
 
-using point3f = point3<float>;
-using point3d = point3<double>;
+using Point3f = Point3<float>;
+using Point3d = Point3<double>;
 
 
 // Implicit KD full binary tree of dimension 2, P can be substituted by sf::Vector2<>.
-template<typename T, typename P = point2<T>>
-struct i2dtree {
+template<typename T, typename P = Point2<T>>
+struct Tree2D {
 
     using value_type = P;
     using base_type = T;
@@ -204,7 +204,7 @@ struct i2dtree {
     }
 
     void nn_search_x ( const const_pointer p_ ) const noexcept {
-        base_type d = i2dtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = Tree2D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -222,7 +222,7 @@ struct i2dtree {
         }
     }
     void nn_search_y ( const const_pointer p_ ) const noexcept {
-        base_type d = i2dtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = Tree2D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -259,10 +259,10 @@ struct i2dtree {
 
     public:
 
-    i2dtree ( const i2dtree & ) = delete;
-    i2dtree ( i2dtree && ) noexcept = delete;
+    Tree2D ( const Tree2D & ) = delete;
+    Tree2D ( Tree2D && ) noexcept = delete;
 
-    i2dtree ( std::initializer_list<value_type> il_ ) noexcept {
+    Tree2D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
@@ -285,7 +285,7 @@ struct i2dtree {
     }
 
     template<typename forward_it>
-    i2dtree ( forward_it first_, forward_it last_ ) noexcept {
+    Tree2D ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
@@ -305,8 +305,8 @@ struct i2dtree {
         }
     }
 
-    i2dtree & operator = ( const i2dtree & ) = delete;
-    i2dtree & operator = ( i2dtree && ) noexcept = delete;
+    Tree2D & operator = ( const Tree2D & ) = delete;
+    Tree2D & operator = ( Tree2D && ) noexcept = delete;
 
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
@@ -331,7 +331,7 @@ struct i2dtree {
     }
 
     template<typename stream>
-    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const i2dtree & tree_ ) noexcept {
+    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Tree2D & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
@@ -358,8 +358,8 @@ struct i2dtree {
 
 
 // Implicit KD full binary tree of dimension 3, P can be substituted by sf::Vector3<>.
-template<typename T, typename P = point3<T>>
-struct i3dtree {
+template<typename T, typename P = Point3<T>>
+struct Tree3D {
 
     using value_type = P;
     using base_type = T;
@@ -484,7 +484,7 @@ struct i3dtree {
     }
 
     void nn_search_xy ( const const_pointer p_ ) const noexcept {
-        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -502,7 +502,7 @@ struct i3dtree {
         }
     }
     void nn_search_yz ( const const_pointer p_ ) const noexcept {
-        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -520,7 +520,7 @@ struct i3dtree {
         }
     }
     void nn_search_zx ( const const_pointer p_ ) const noexcept {
-        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -539,7 +539,7 @@ struct i3dtree {
     }
 
     void nn_search_xz ( const const_pointer p_ ) const noexcept {
-        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -557,7 +557,7 @@ struct i3dtree {
         }
     }
     void nn_search_yx ( const const_pointer p_ ) const noexcept {
-        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -575,7 +575,7 @@ struct i3dtree {
         }
     }
     void nn_search_zy ( const const_pointer p_ ) const noexcept {
-        base_type d = i3dtree::distance_squared ( *p_, m_nearest.point );
+        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
@@ -605,17 +605,17 @@ struct i3dtree {
 
     container m_data;
     const_pointer m_leaf_start;
-    void ( i3dtree::*nn_search ) ( const const_pointer ) const noexcept;
+    void ( Tree3D::*nn_search ) ( const const_pointer ) const noexcept;
     mutable nearest_data m_nearest;
 
     static constexpr std::size_t m_linear_bound = 44u;
 
     public:
 
-    i3dtree ( const i3dtree & ) = delete;
-    i3dtree ( i3dtree && ) noexcept = delete;
+    Tree3D ( const Tree3D & ) = delete;
+    Tree3D ( Tree3D && ) noexcept = delete;
 
-    i3dtree ( std::initializer_list<value_type> il_ ) noexcept {
+    Tree3D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
@@ -624,48 +624,48 @@ struct i3dtree {
                 points.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
                 switch ( get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) ) ) {
-                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xy; break;
-                case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yz; break;
-                case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zx; break;
-                case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_xz; break;
-                case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_yx; break;
-                case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & i3dtree::nn_search_zy; break;
+                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & Tree3D::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & Tree3D::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & Tree3D::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & Tree3D::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & Tree3D::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); nn_search = & Tree3D::nn_search_zy; break;
                 }
             }
             else {
                 m_data.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
-                nn_search = & i3dtree::nn_search_linear;
+                nn_search = & Tree3D::nn_search_linear;
             }
         }
     }
 
     template<typename forward_it>
-    i3dtree ( forward_it first_, forward_it last_ ) noexcept {
+    Tree3D ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
-                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xy; break;
-                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yz; break;
-                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zx; break;
-                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_xz; break;
-                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_yx; break;
-                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = & i3dtree::nn_search_zy; break;
+                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_zy; break;
                 }
             }
             else {
                 m_data.reserve ( n );
                 std::copy ( first_, last_, std::back_inserter ( m_data ) );
-                nn_search = & i3dtree::nn_search_linear;
+                nn_search = & Tree3D::nn_search_linear;
             }
         }
     }
 
-    i3dtree & operator = ( const i3dtree & ) = delete;
-    i3dtree & operator = ( i3dtree && ) noexcept = delete;
+    Tree3D & operator = ( const Tree3D & ) = delete;
+    Tree3D & operator = ( Tree3D && ) noexcept = delete;
 
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
@@ -686,7 +686,7 @@ struct i3dtree {
     }
 
     template<typename stream>
-    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const i3dtree & tree_ ) noexcept {
+    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Tree3D & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
@@ -724,6 +724,6 @@ struct message {
 }
 
 template<typename base_type, std::size_t S>
-using ikdtree = typename std::conditional<2 == S, i2dtree<base_type>, typename std::conditional<3 == S, i3dtree<base_type>, detail::message<S>>::type>::type;
+using ikdtree = typename std::conditional<2 == S, Tree2D<base_type>, typename std::conditional<3 == S, Tree3D<base_type>, detail::message<S>>::type>::type;
 
 }

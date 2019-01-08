@@ -59,10 +59,10 @@ namespace fs = std::filesystem;
 #define unlikely(x)    __builtin_expect(!!(x), 0)
 
 
-[[ nodiscard ]] constexpr auto nn_distance_squared ( const kdt::point2f & p1_, const kdt::point2f & p2_ ) noexcept {
+[[ nodiscard ]] constexpr auto nn_distance_squared ( const kd::Point2f & p1_, const kd::Point2f & p2_ ) noexcept {
     return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
 }
-[[ nodiscard ]] constexpr auto nn_distance_squared ( const kdt::point3f & p1_, const kdt::point3f & p2_ ) noexcept {
+[[ nodiscard ]] constexpr auto nn_distance_squared ( const kd::Point3f & p1_, const kd::Point3f & p2_ ) noexcept {
     return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) ) + ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) );
 }
 
@@ -90,18 +90,18 @@ bool test ( const int n_ ) noexcept {
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 20.0f, 40.0f };
 
-    std::vector<kdt::point2f> points;
+    std::vector<kd::Point2f> points;
 
     for ( int i = 0; i < n_; ++i ) {
         points.emplace_back ( disx ( rng ), disy ( rng ) );
     }
 
-    kdt::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
+    kd::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
 
     bool rv = true;
 
     for ( int i = 0; i < 1'000'000; ++i ) {
-        const kdt::point2f ptf { disx ( rng ), disy ( rng ) };
+        const kd::Point2f ptf { disx ( rng ), disy ( rng ) };
         rv = rv and ( tree.nearest_pnt ( ptf ) == nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) );
         if ( not ( rv ) ) {
             std::cout << "fail\n";
@@ -122,26 +122,26 @@ int wmain89678978 ( ) {
 
 int wmain879879 ( ) {
 
-    // std::vector<kdt::point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    std::vector<kdt::point2f> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    // std::vector<kd::Point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    std::vector<kd::Point2f> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    kdt::i2dtree<float> tree { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    kd::Tree2D<float> tree { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
 
     std::cout << nl << tree << nl << nl;
 
-    kdt::point2f ptf { 7.6f, 7.9f };
+    kd::Point2f ptf { 7.6f, 7.9f };
 
     std::cout << nl << nl << "nearest " << nl << tree.nearest_pnt ( ptf ) << nl;
 
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << kdt::i2dtree<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << kd::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
@@ -154,7 +154,7 @@ const int k = 2;
 
 // A structure to represent node of kd tree
 struct Node {
-    int point2f [ k ]; // To store k dimensional point2f
+    int Point2f [ k ]; // To store k dimensional Point2f
     Node *left, *right;
 };
 
@@ -163,7 +163,7 @@ struct Node* newNode ( int arr [ ] ) {
     struct Node* temp = new Node;
 
     for ( int i = 0; i < k; i++ )
-        temp->point2f [ i ] = arr [ i ];
+        temp->Point2f [ i ] = arr [ i ];
 
     temp->left = temp->right = NULL;
     return temp;
@@ -171,37 +171,37 @@ struct Node* newNode ( int arr [ ] ) {
 
 // Inserts a new node and returns root of modified tree
 // The parameter depth is used to decide axis of comparison
-Node *insertRec ( Node *root, int point2f [ ], unsigned depth ) {
+Node *insertRec ( Node *root, int Point2f [ ], unsigned depth ) {
     // Tree is empty?
     if ( root == NULL )
-        return newNode ( point2f );
+        return newNode ( Point2f );
 
     // Calculate current dimension (cd) of comparison
     unsigned cd = depth % k;
 
-    // Compare the new kdt::point2f with root on current dimension 'cd'
+    // Compare the new kd::Point2f with root on current dimension 'cd'
     // and decide the left or right subtree
-    if ( point2f [ cd ] < ( root->point2f [ cd ] ) )
-        root->left = insertRec ( root->left, point2f, depth + 1 );
+    if ( Point2f [ cd ] < ( root->Point2f [ cd ] ) )
+        root->left = insertRec ( root->left, Point2f, depth + 1 );
     else
-        root->right = insertRec ( root->right, point2f, depth + 1 );
+        root->right = insertRec ( root->right, Point2f, depth + 1 );
 
     return root;
 }
 
-// Function to insert a new kdt::point2f with given point2f in
+// Function to insert a new kd::Point2f with given Point2f in
 // KD Tree and return new root. It mainly uses above recursive
 // function "insertRec()"
-Node* insert ( Node *root, int point2f [ ] ) {
-    return insertRec ( root, point2f, 0 );
+Node* insert ( Node *root, int Point2f [ ] ) {
+    return insertRec ( root, Point2f, 0 );
 }
 
 // A utility function to find minimum of three integers
 Node *minNode ( Node *x, Node *y, Node *z, int d ) {
     Node *res = x;
-    if ( y != NULL && y->point2f [ d ] < res->point2f [ d ] )
+    if ( y != NULL && y->Point2f [ d ] < res->Point2f [ d ] )
         res = y;
-    if ( z != NULL && z->point2f [ d ] < res->point2f [ d ] )
+    if ( z != NULL && z->Point2f [ d ] < res->Point2f [ d ] )
         res = z;
     return res;
 }
@@ -217,7 +217,7 @@ Node *findMinRec ( Node* root, int d, unsigned depth ) {
     // dimensions (k)
     unsigned cd = depth % k;
 
-    // Compare point2f with root with respect to cd (Current dimension)
+    // Compare Point2f with root with respect to cd (Current dimension)
     if ( cd == d ) {
         if ( root->left == NULL )
             return root;
@@ -239,50 +239,50 @@ Node *findMin ( Node* root, int d ) {
 
 // A utility method to determine if two Points are same
 // in K Dimensional space
-bool arePointsSame ( int point1 [ ], int point2 [ ] ) {
+bool arePointsSame ( int point1 [ ], int Point2 [ ] ) {
     // Compare individual pointinate values
     for ( int i = 0; i < k; ++i )
-        if ( point1 [ i ] != point2 [ i ] )
+        if ( point1 [ i ] != Point2 [ i ] )
             return false;
 
     return true;
 }
 
-// Copies point2f p2 to p1
+// Copies Point2f p2 to p1
 void copyPoint ( int p1 [ ], int p2 [ ] ) {
     for ( int i = 0; i < k; i++ )
         p1 [ i ] = p2 [ i ];
 }
 
-// Function to delete a given point2f 'point2f[]' from tree with root
+// Function to delete a given Point2f 'Point2f[]' from tree with root
 // as 'root'.  depth is current depth and passed as 0 initially.
 // Returns root of the modified tree.
-Node *deleteNodeRec ( Node *root, int point2f [ ], int depth ) {
-    // Given point2f is not present
+Node *deleteNodeRec ( Node *root, int Point2f [ ], int depth ) {
+    // Given Point2f is not present
     if ( root == NULL )
         return NULL;
 
     // Find dimension of current node
     int cd = depth % k;
 
-    // If the point2f to be deleted is present at root
-    if ( arePointsSame ( root->point2f, point2f ) ) {
+    // If the Point2f to be deleted is present at root
+    if ( arePointsSame ( root->Point2f, Point2f ) ) {
         // 2.b) If right child is not NULL
         if ( root->right != NULL ) {
             // Find minimum of root's dimension in right subtree
             Node *min = findMin ( root->right, cd );
 
             // Copy the minimum to root
-            copyPoint ( root->point2f, min->point2f );
+            copyPoint ( root->Point2f, min->Point2f );
 
             // Recursively delete the minimum
-            root->right = deleteNodeRec ( root->right, min->point2f, depth + 1 );
+            root->right = deleteNodeRec ( root->right, min->Point2f, depth + 1 );
         }
         else if ( root->left != NULL ) // same as above
         {
             Node *min = findMin ( root->left, cd );
-            copyPoint ( root->point2f, min->point2f );
-            root->right = deleteNodeRec ( root->left, min->point2f, depth + 1 );
+            copyPoint ( root->Point2f, min->Point2f );
+            root->right = deleteNodeRec ( root->left, min->Point2f, depth + 1 );
         }
         else // If node to be deleted is leaf node
         {
@@ -292,18 +292,18 @@ Node *deleteNodeRec ( Node *root, int point2f [ ], int depth ) {
         return root;
     }
 
-    // 2) If current node doesn't contain point2f, search downward
-    if ( point2f [ cd ] < root->point2f [ cd ] )
-        root->left = deleteNodeRec ( root->left, point2f, depth + 1 );
+    // 2) If current node doesn't contain Point2f, search downward
+    if ( Point2f [ cd ] < root->Point2f [ cd ] )
+        root->left = deleteNodeRec ( root->left, Point2f, depth + 1 );
     else
-        root->right = deleteNodeRec ( root->right, point2f, depth + 1 );
+        root->right = deleteNodeRec ( root->right, Point2f, depth + 1 );
     return root;
 }
 
-// Function to delete a given point2f from K D Tree with 'root'
-Node* deleteNode ( Node *root, int point2f [ ] ) {
+// Function to delete a given Point2f from K D Tree with 'root'
+Node* deleteNode ( Node *root, int Point2f [ ] ) {
   // Pass depth as 0
-    return deleteNodeRec ( root, point2f, 0 );
+    return deleteNodeRec ( root, Point2f, 0 );
 }
 
 // Driver program to test above functions
@@ -321,7 +321,7 @@ int main8798797 ( ) {
     root = deleteNode ( root, points [ 0 ] );
 
     cout << "Root after deletion of (30, 40)\n";
-    cout << root->point2f [ 0 ] << ", " << root->point2f [ 1 ] << endl;
+    cout << root->Point2f [ 0 ] << ", " << root->Point2f [ 1 ] << endl;
 
     return 0;
 }
@@ -331,12 +331,12 @@ int main8798797 ( ) {
 using PointArray = std::array<float, 2>;
 using PointToID = spatial::idle_point_multiset<2, PointArray>;
 
-[[ nodiscard ]] PointArray toArray ( const kdt::point2f & v_ ) noexcept {
+[[ nodiscard ]] PointArray toArray ( const kd::Point2f & v_ ) noexcept {
     return *reinterpret_cast<const PointArray*> ( &v_ );
 }
 
-[[ nodiscard ]] kdt::point2f fromArray ( const PointArray & p_ ) noexcept {
-    return *reinterpret_cast<const kdt::point2f*> ( &p_ );
+[[ nodiscard ]] kd::Point2f fromArray ( const PointArray & p_ ) noexcept {
+    return *reinterpret_cast<const kd::Point2f*> ( &p_ );
 }
 
 
@@ -347,15 +347,15 @@ struct KDTree {
     template<typename forward_it>
     KDTree ( forward_it first_, forward_it last_ ) noexcept :
         ptree { kd_create ( 2 ) } {
-        std::for_each ( first_, last_, [ this ] ( kdt::point2f & pos ) { kd_insertf ( ptree, ( const float * ) & pos, NULL ); } );
+        std::for_each ( first_, last_, [ this ] ( kd::Point2f & pos ) { kd_insertf ( ptree, ( const float * ) & pos, NULL ); } );
     }
 
     ~KDTree ( ) noexcept {
         kd_free ( ptree );
     }
 
-    [[ nodiscard ]] kdt::point2f nearest_pnt ( const kdt::point2f & pos_ ) const noexcept {
-        kdt::point2f pos;
+    [[ nodiscard ]] kd::Point2f nearest_pnt ( const kd::Point2f & pos_ ) const noexcept {
+        kd::Point2f pos;
         struct kdres * res = kd_nearestf ( ptree, ( const float * ) & pos_ );
         kd_res_itemf ( res, ( float * ) & pos );
         kd_res_free ( res );
@@ -375,7 +375,7 @@ int wmain ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -384,11 +384,11 @@ int wmain ( ) {
         timer.start ( );
 
         KDTree tree ( std::begin ( points ), std::end ( points ) );
-        // kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        // kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -407,7 +407,7 @@ int wmain ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -416,11 +416,11 @@ int wmain ( ) {
         timer.start ( );
 
         KDTree tree ( std::begin ( points ), std::end ( points ) );
-        // kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        // kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -439,7 +439,7 @@ int wmain ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -448,11 +448,11 @@ int wmain ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -471,7 +471,7 @@ int wmain ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -480,11 +480,11 @@ int wmain ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -519,7 +519,7 @@ int main877989 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -528,11 +528,11 @@ int main877989 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -551,7 +551,7 @@ int main877989 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -560,11 +560,11 @@ int main877989 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -583,7 +583,7 @@ int main877989 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point3f> points;
+        std::vector<kd::Point3f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ), disz ( rng ) );
@@ -592,11 +592,11 @@ int main877989 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kdt::i3dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree3D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point3f ptf;
+        kd::Point3f ptf;
 
         timer.start ( );
 
@@ -615,7 +615,7 @@ int main877989 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point3f> points;
+        std::vector<kd::Point3f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ), disz ( rng ) );
@@ -624,11 +624,11 @@ int main877989 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kdt::i3dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree3D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point3f ptf;
+        kd::Point3f ptf;
 
         timer.start ( );
 
@@ -659,7 +659,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -667,11 +667,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -690,7 +690,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -698,11 +698,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -721,7 +721,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -729,11 +729,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -752,7 +752,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -760,11 +760,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
@@ -783,7 +783,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kdt::point2f> points;
+        std::vector<kd::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -791,11 +791,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kdt::point2f ptf;
+        kd::Point2f ptf;
 
         timer.start ( );
 
