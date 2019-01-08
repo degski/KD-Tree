@@ -69,12 +69,10 @@ struct Point2 {
 
     template<typename stream>
     [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Point2 & p_ ) noexcept {
-        if ( Point2 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ ) {
+        if ( Point2 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ )
             out_ << '<' << p_.x << ' ' << p_.y << '>';
-        }
-        else {
+        else
             out_ << "<* *>";
-        }
         return out_;
     }
 };
@@ -114,12 +112,10 @@ struct Point3 {
 
     template<typename stream>
     [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Point3 & p_ ) noexcept {
-        if ( Point3 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ ) {
+        if ( Point3 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ )
             out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
-        }
-        else {
+        else
             out_ << "<* * *>";
-        }
         return out_;
     }
 };
@@ -181,29 +177,29 @@ struct Tree2D {
     }
 
     template<typename random_it>
-    void kd_construct_x ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+    void kd_construct_xy ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
         *p_ = *median;
         if ( first_ != median ) {
-            kd_construct_y ( left ( p_ ), first_, median );
+            kd_construct_yx ( left ( p_ ), first_, median );
             if ( ++median != last_ )
-                kd_construct_y ( right ( p_ ), median, last_ );
+                kd_construct_yx ( right ( p_ ), median, last_ );
         }
     }
     template<typename random_it>
-    void kd_construct_y ( const pointer p_, random_it first_, random_it last_ ) noexcept {
+    void kd_construct_yx ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
         *p_ = *median;
         if ( first_ != median ) {
-            kd_construct_x ( left ( p_ ), first_, median );
+            kd_construct_xy ( left ( p_ ), first_, median );
             if ( ++median != last_ )
-                kd_construct_x ( right ( p_ ), median, last_ );
+                kd_construct_xy ( right ( p_ ), median, last_ );
         }
     }
 
-    void nn_search_x ( const const_pointer p_ ) const noexcept {
+    void nn_search_xy ( const const_pointer p_ ) const noexcept {
         base_type d = Tree2D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
@@ -211,17 +207,17 @@ struct Tree2D {
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->x - m_nearest.point.x ) > base_type { 0 } ) {
-            nn_search_y ( left ( p_ ) );
+            nn_search_yx ( left ( p_ ) );
             if ( ( ( d * d ) < m_nearest.min_distance ) )
-                nn_search_y ( right ( p_ ) );
+                nn_search_yx ( right ( p_ ) );
         }
         else {
-            nn_search_y ( right ( p_ ) );
+            nn_search_yx ( right ( p_ ) );
             if ( ( ( d * d ) < m_nearest.min_distance ) )
-                nn_search_y ( left ( p_ ) );
+                nn_search_yx ( left ( p_ ) );
         }
     }
-    void nn_search_y ( const const_pointer p_ ) const noexcept {
+    void nn_search_yx ( const const_pointer p_ ) const noexcept {
         base_type d = Tree2D::distance_squared ( *p_, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
@@ -229,14 +225,14 @@ struct Tree2D {
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
-            nn_search_x ( left ( p_ ) );
+            nn_search_xy ( left ( p_ ) );
             if ( ( ( d * d ) < m_nearest.min_distance ) )
-                nn_search_x ( right ( p_ ) );
+                nn_search_xy ( right ( p_ ) );
         }
         else {
-            nn_search_x ( right ( p_ ) );
+            nn_search_xy ( right ( p_ ) );
             if ( ( ( d * d ) < m_nearest.min_distance ) )
-                nn_search_x ( left ( p_ ) );
+                nn_search_xy ( left ( p_ ) );
         }
     }
 
@@ -272,8 +268,8 @@ struct Tree2D {
                 points.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
                 switch ( m_dim ) {
-                case 0: kd_construct_x ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-                case 1: kd_construct_y ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
+                case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
+                case 1: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
                 }
             }
             else {
@@ -293,8 +289,8 @@ struct Tree2D {
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( first_, last_ );
                 switch ( m_dim ) {
-                case 0: kd_construct_x ( m_data.data ( ), first_, last_ ); break;
-                case 1: kd_construct_y ( m_data.data ( ), first_, last_ ); break;
+                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); break;
+                case 1: kd_construct_yx ( m_data.data ( ), first_, last_ ); break;
                 }
             }
             else {
@@ -311,8 +307,8 @@ struct Tree2D {
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         switch ( m_dim ) {
-        case 0: nn_search_x ( m_data.data ( ) ); break;
-        case 1: nn_search_y ( m_data.data ( ) ); break;
+        case 0: nn_search_xy ( m_data.data ( ) ); break;
+        case 1: nn_search_yx ( m_data.data ( ) ); break;
         case 2: nn_search_linear ( ); break;
         }
         return m_nearest.found;
