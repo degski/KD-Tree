@@ -44,13 +44,9 @@
 
 namespace fs = std::filesystem;
 
-
-#include <spatial/idle_point_multimap.hpp>
 #include <spatial/idle_point_multiset.hpp>
 #include <spatial/neighbor_iterator.hpp>
 
-
-#include <SFML/System.hpp>
 #include <splitmix.hpp>
 #include <plf/plf_nanotimer.h>
 
@@ -116,7 +112,7 @@ bool test ( const int n_ ) noexcept {
     return rv;
 }
 
-int main8978978 ( ) {
+int wmain89678978 ( ) {
 
     std::cout << std::boolalpha << test ( 1'000'000 ) << nl;
 
@@ -124,71 +120,7 @@ int main8978978 ( ) {
 }
 
 
-
-int wmain8797 ( ) {
-
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
-    std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
-    std::uniform_real_distribution<float> disx { 0.0f, 40.0f };
-
-    for ( int i = 0; i < 100; ++i ) {
-
-        plf::nanotimer timer;
-        double st;
-
-        constexpr int n = 1'000;
-
-        std::vector<kdt::point2f> points;
-
-        for ( int i = 0; i < n; ++i ) {
-            points.emplace_back ( disx ( rng ), disy ( rng ) );
-        }
-
-        timer.start ( );
-
-        kdt::i2dtree<float> tree ( std::begin ( points ), std::end ( points ) );
-
-        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
-
-        // std::cout << nl << tree << nl << nl;
-
-        //kdt::point2f p { disx ( rng ), disy ( rng ) };
-
-        //std::cout << "ptf " << p << nl;
-
-        bool result = true;
-
-        constexpr int cnt = 100'000;
-
-        timer.start ( );
-        for ( int i = 0; i < cnt; ++i ) {
-            /*
-            const kdt::point2f p { disx ( rng ), disy ( rng ) };
-            bool r = tree.nearest_pnt ( p ) == kdt::i2dtree<float>::nearest_linear_pnt ( p, points );
-            if ( not ( r ) ) {
-                const kdt::point2f p1 = tree.nearest_pnt ( p ), p2 = kdt::i2dtree<float>::nearest_linear_pnt ( p, points );
-                const float f1 = kdt::i2dtree<float>::distance_squared ( p, p1 ), f2 = kdt::i2dtree<float>::distance_squared ( p, p2 );
-                if ( f1 == f2 ) {
-                    continue;
-                }
-                std::cout << p1 << f1 << p2 << f2 << nl;
-            }
-            result &= r;
-            */
-        }
-        // std::cout << "elapsed im " << ( std::uint64_t ) ( timer.get_elapsed_ns ( ) / cnt ) << " ns" << nl;
-
-        std::cout << std::boolalpha << result << nl;
-
-        // std::cout << "nearest im " << found_impl << " " << kdt::i2dtree<kdt::point2f>::nearest_linear_pnt ( p, points ) << nl;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-
-
-int wmain ( ) {
+int wmain879879 ( ) {
 
     // std::vector<kdt::point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<kdt::point2f> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
@@ -431,13 +363,13 @@ struct KDTree {
     }
 };
 
-int main676786 ( ) {
+int wmain ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 0.0f,  40.0f };
 
-    constexpr int n = 43;
+    constexpr int n = 100'000;
 
     {
         plf::nanotimer timer;

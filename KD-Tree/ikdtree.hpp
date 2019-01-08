@@ -31,46 +31,113 @@
 #include <limits>
 #include <type_traits>
 
-#include <SFML/System.hpp>
-
-
-// https://stackoverflow.com/questions/1627305/nearest-neighbor-k-d-tree-wikipedia-proof/37107030#37107030
 
 namespace kdt {
 
-using point2f = sf::Vector2<float>;
-using point3f = sf::Vector3<float>;
-}
-
-template<typename Stream>
-[[ maybe_unused ]] Stream & operator << ( Stream & out_, const kdt::point2f & p_ ) noexcept {
-    if ( kdt::point2f { std::numeric_limits<decltype ( p_.x )>::max ( ), std::numeric_limits<decltype ( p_.y )>::max ( ) } != p_ ) {
-        out_ << '<' << p_.x << ' ' << p_.y << '>';
-    }
-    else {
-        out_ << "<* *>";
-    }
-    return out_;
-}
-template<typename Stream>
-[[ maybe_unused ]] Stream & operator << ( Stream & out_, const kdt::point3f & p_ ) noexcept {
-    if ( kdt::point3f { std::numeric_limits<decltype ( p_.x )>::max ( ), std::numeric_limits<decltype ( p_.y )>::max ( ), std::numeric_limits<decltype ( p_.z )>::max ( ) } != p_ ) {
-        out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
-    }
-    else {
-        out_ << "<* * *>";
-    }
-    return out_;
-}
-
-namespace kdt {
-
-// Implicit KD full binary tree of dimension 2.
 template<typename T>
+struct point2 {
+
+    using value_type = T;
+
+    value_type x, y;
+
+    point2 ( ) noexcept = default;
+    point2 ( const point2 & p_ ) noexcept = default;
+    point2 ( point2 && p_ ) noexcept = default;
+    point2 ( value_type && x_, value_type && y_ ) noexcept :
+        x { std::move ( x_ ) }, y { std::move ( y_ ) } {
+    }
+
+    [[ maybe_unused ]] point2 & operator = ( const point2 & p_ ) noexcept = default;
+    [[ maybe_unused ]] point2 & operator = ( point2 && p_ ) noexcept = default;
+
+    [[ nodiscard ]] bool operator == ( const point2 & p_ ) const noexcept {
+        return x == p_.x and y == p_.y;
+    }
+    [[ nodiscard ]] bool operator != ( const point2 & p_ ) const noexcept {
+        return x != p_.x or y != p_.y;
+    }
+
+    [[ maybe_unused ]] point2 & operator += ( const point2 & p_ ) noexcept {
+        x += p_.x; y += p_.y;
+        return *this;
+    }
+    [[ maybe_unused ]] point2 & operator -= ( const point2 & p_ ) noexcept {
+        x -= p_.x; y -= p_.y;
+        return *this;
+    }
+
+    template<typename stream>
+    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const point2 & p_ ) noexcept {
+        if ( point2 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ ) {
+            out_ << '<' << p_.x << ' ' << p_.y << '>';
+        }
+        else {
+            out_ << "<* *>";
+        }
+        return out_;
+    }
+};
+
+template<typename T>
+struct point3 {
+
+    using value_type = T;
+
+    value_type x, y, z;
+
+    point3 ( ) noexcept = default;
+    point3 ( const point3 & p_ ) noexcept = default;
+    point3 ( point3 && p_ ) noexcept = default;
+    point3 ( value_type && x_, value_type && y_, value_type && z_ ) noexcept :
+        x { std::move ( x_ ) }, y { std::move ( y_ ) }, z { std::move ( z_ ) } {
+    }
+
+    [[ maybe_unused ]] point3 & operator = ( const point3 & p_ ) noexcept = default;
+    [[ maybe_unused ]] point3 & operator = ( point3 && p_ ) noexcept = default;
+
+    [[ nodiscard ]] bool operator == ( const point3 & p_ ) const noexcept {
+        return x == p_.x and y == p_.y and z == p_.z;
+    }
+    [[ nodiscard ]] bool operator != ( const point3 & p_ ) const noexcept {
+        return x != p_.x or y != p_.y or z != p_.z;
+    }
+
+    [[ maybe_unused ]] point3 & operator += ( const point3 & p_ ) noexcept {
+        x += p_.x; y += p_.y; z += p_.z;
+        return *this;
+    }
+    [[ maybe_unused ]] point3 & operator -= ( const point3 & p_ ) noexcept {
+        x -= p_.x; y -= p_.y; z -= p_.z;
+        return *this;
+    }
+
+    template<typename stream>
+    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const point3 & p_ ) noexcept {
+        if ( point3 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ ) {
+            out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
+        }
+        else {
+            out_ << "<* * *>";
+        }
+        return out_;
+    }
+};
+
+
+using point2f = point2<float>;
+using point2d = point2<double>;
+
+using point3f = point3<float>;
+using point3d = point3<double>;
+
+
+// Implicit KD full binary tree of dimension 2, P can be substituted by sf::Vector2<>.
+template<typename T, typename P = point2<T>>
 struct i2dtree {
 
+    using value_type = P;
     using base_type = T;
-    using value_type = sf::Vector2<T>;
     using pointer = value_type *;
     using reference = value_type &;
     using const_pointer = value_type const *;
@@ -82,8 +149,6 @@ struct i2dtree {
     using const_iterator = typename container::const_iterator;
 
     private:
-
-    static_assert ( std::is_same<value_type, point2f>::value, "point is not consistently defined" );
 
     struct nearest_data {
         value_type point;
@@ -265,8 +330,8 @@ struct i2dtree {
         return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
     }
 
-    template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const i2dtree & tree_ ) noexcept {
+    template<typename stream>
+    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const i2dtree & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
@@ -292,12 +357,12 @@ struct i2dtree {
 };
 
 
-// Implicit KD full binary tree of dimension 3.
-template<typename T>
+// Implicit KD full binary tree of dimension 3, P can be substituted by sf::Vector3<>.
+template<typename T, typename P = point3<T>>
 struct i3dtree {
 
+    using value_type = P;
     using base_type = T;
-    using value_type = sf::Vector3<T>;
     using pointer = value_type *;
     using reference = value_type &;
     using const_pointer = value_type const *;
@@ -309,8 +374,6 @@ struct i3dtree {
     using const_iterator = typename container::const_iterator;
 
     private:
-
-    static_assert ( std::is_same<value_type, point3f>::value, "point is not consistently defined" );
 
     struct nearest_data {
         value_type point;
@@ -622,8 +685,8 @@ struct i3dtree {
         return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) + ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) ) );
     }
 
-    template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const i3dtree & tree_ ) noexcept {
+    template<typename stream>
+    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const i3dtree & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
