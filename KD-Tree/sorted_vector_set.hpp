@@ -26,7 +26,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstdint>
-#include <ciso646>
 #include <cassert>
 
 #include <algorithm>
@@ -94,13 +93,22 @@ public:
         }
         return it;
     }
-
     [[ maybe_unused ]] iterator insert ( const_iterator it_, const_reference t_ ) noexcept {
         return m_data.insert ( it_, t_ );
     }
 
-    [[ maybe_unused ]] iterator insert ( const_iterator it_, rv_reference t_ ) noexcept {
-        return m_data.insert ( it_, std::move ( t_ ) );
+    template<typename ... Args>
+    [[ maybe_unused ]] iterator emplace ( Args ... args_ ) noexcept {
+        rv_reference t { std::forward<Args> ( args_ ) ... };
+        const iterator it = lower_bound ( t );
+        if ( it == m_data.end ( ) or Compare ( ) ( t, *it ) ) {
+            return m_data.emplace ( it, std::move ( t ) );
+        }
+        return it;
+    }
+    template<typename ... Args>
+    [[ maybe_unused ]] iterator emplace ( const_iterator it_, Args ... args_ ) noexcept {
+        return m_data.emplace ( it_, std::forward<Args> ( args_ )... );
     }
 
     // IMPORTANT: Changes the value, i.e. the key, if this does not respect the sort-order,
@@ -117,9 +125,25 @@ public:
         return it;
     }
 
+    template<typename ... Args>
+    [[ maybe_unused ]] iterator emplace_or_update_unsafe ( Args ... args_ ) noexcept {
+        rv_reference t { std::forward<Args> ( args_ ) ... };
+        iterator it = lower_bound ( t );
+        if ( it == m_data.end ( ) or Compare ( ) ( t, *it ) ) {
+            it = m_data.emplace ( it, std::move ( t ) );
+        }
+        else {
+            *it = std::move ( t );
+        }
+        return it;
+    }
+
     // IMPORTANT: Changes the value, i.e. the key AND ASSUMES THE VALUE EXISTS.
     void update_unsafe ( const_reference t_ ) noexcept {
         *lower_bound ( t_ ) = t_;
+    }
+    void update_unsafe ( rv_reference t_ ) noexcept {
+        *lower_bound ( t_ ) = std::move ( t_ );
     }
 
     // Gives direct acces to the underlying container, irrespective of ordering.
@@ -145,6 +169,11 @@ public:
     [[ nodiscard ]] const_reference front ( ) const noexcept { return m_data.front ( ); }
     [[ nodiscard ]] const_reference back ( ) const noexcept { return m_data.back ( ); }
 
+    [[ nodiscard ]] const_reference bottom ( ) const noexcept { return m_data.front ( ); }
+    [[ nodiscard ]] const_reference top ( ) const noexcept { return m_data.back ( ); }
+
+    void pop ( ) noexcept { m_data.pop_back ( ); }
+
     void reserve ( const size_type r_ ) { m_data.reserve ( r_ ); }
     void clear ( ) noexcept { m_data.clear ( ); }
 
@@ -164,7 +193,6 @@ public:
     [[ nodiscard ]] iterator lower_bound ( const_reference t_ ) noexcept {
         return std::lower_bound ( std::begin ( m_data ), std::end ( m_data ), t_, Compare ( ) );
     }
-
     [[ nodiscard ]] const_iterator lower_bound ( const_reference t_ ) const noexcept {
         return std::lower_bound ( std::cbegin ( m_data ), std::cend ( m_data ), t_, Compare ( ) );
     }

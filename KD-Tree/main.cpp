@@ -1077,8 +1077,11 @@ struct PQType {
     }
 };
 
+#include "sorted_vector_set.hpp"
+
+
 template<typename Point>
-using PQueue = std::priority_queue<PQType<Point>, std::vector<PQType<Point>>, std::greater<PQType<Point>>>;
+using PQueue = std::priority_queue<PQType<Point>, std::vector<PQType<Point>>, std::greater<PQType<Point>> > ;
 
 
 int wmain ( ) {
@@ -1089,7 +1092,7 @@ int wmain ( ) {
 
     PQueue<kd::Point2f> pq;
 
-    for ( int i = 0; i < 5; ++i ) {
+    for ( int i = 0; i < 500; ++i ) {
         pq.emplace ( pdisx ( rng ), pdisy ( rng ), pdisv ( rng ) );
     }
 
