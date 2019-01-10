@@ -21,12 +21,18 @@
     <ClCompile Include="kdtree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="kdtree2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kdtree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ikdtree.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kdtree2.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

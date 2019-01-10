@@ -67,8 +67,8 @@ struct Point2 {
         return *this;
     }
 
-    template<typename stream>
-    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Point2 & p_ ) noexcept {
+    template<typename Stream>
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const Point2 & p_ ) noexcept {
         if ( Point2 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ )
             out_ << '<' << p_.x << ' ' << p_.y << '>';
         else
@@ -110,8 +110,8 @@ struct Point3 {
         return *this;
     }
 
-    template<typename stream>
-    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Point3 & p_ ) noexcept {
+    template<typename Stream>
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const Point3 & p_ ) noexcept {
         if ( Point3 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ )
             out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
         else
@@ -326,8 +326,8 @@ struct Tree2D {
         return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
     }
 
-    template<typename stream>
-    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Tree2D & tree_ ) noexcept {
+    template<typename Stream>
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const Tree2D & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
@@ -681,8 +681,8 @@ struct Tree3D {
         return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) + ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) ) );
     }
 
-    template<typename stream>
-    [[ maybe_unused ]] friend stream & operator << ( stream & out_, const Tree3D & tree_ ) noexcept {
+    template<typename Stream>
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const Tree3D & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
             out_ << p;
         }
@@ -710,7 +710,7 @@ struct Tree3D {
 namespace detail {
 
 template<std::size_t S>
-struct message {
+struct message { // needs fixing.
 
     template<typename ... Args>
     message ( Args ... ) {

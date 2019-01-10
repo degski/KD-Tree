@@ -213,11 +213,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="kdtree.cpp" />
+    <ClCompile Include="kdtree2.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kdtree.h" />
     <ClInclude Include="ikdtree.hpp" />
+    <ClInclude Include="kdtree2.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

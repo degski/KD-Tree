@@ -52,6 +52,7 @@ namespace fs = std::filesystem;
 
 #include "ikdtree.hpp"
 #include "kdtree.h"
+#include "kdtree2.hpp"
 
 #define nl '\n'
 
@@ -91,16 +92,17 @@ bool test ( const int n_ ) noexcept {
     std::uniform_real_distribution<float> disx { 20.0f, 40.0f };
 
     std::vector<kd::Point2f> points;
+    points.reserve ( n_ );
 
     for ( int i = 0; i < n_; ++i ) {
         points.emplace_back ( disx ( rng ), disy ( rng ) );
     }
 
-    kd::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
+    kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
     bool rv = true;
 
-    for ( int i = 0; i < 1'000'000; ++i ) {
+    for ( int i = 0; i < 100'000; ++i ) {
         const kd::Point2f ptf { disx ( rng ), disy ( rng ) };
         rv = rv and ( tree.nearest_pnt ( ptf ) == nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) );
         if ( not ( rv ) ) {
@@ -112,9 +114,14 @@ bool test ( const int n_ ) noexcept {
     return rv;
 }
 
-int wmain89678978 ( ) {
+int wmain68461 ( ) {
 
-    std::cout << std::boolalpha << test ( 1'000'000 ) << nl;
+    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    std::uniform_int_distribution<int> dis { 16, 10'000 };
+
+    for ( int i = 0; i < 1'000; ++i ) {
+        std::cout << std::boolalpha << test ( dis ( rng ) ) << nl;
+    }
 
     return EXIT_SUCCESS;
 }
@@ -150,7 +157,7 @@ int wmain879879 ( ) {
 
 using namespace std;
 
-const int k = 2;
+constexpr int k = 2;
 
 // A structure to represent node of kd tree
 struct Node {
@@ -179,7 +186,7 @@ Node *insertRec ( Node *root, int Point2f [ ], unsigned depth ) {
     // Calculate current dimension (cd) of comparison
     unsigned cd = depth % k;
 
-    // Compare the new kd::Point2f with root on current dimension 'cd'
+    // Compare the new Point2f with root on current dimension 'cd'
     // and decide the left or right subtree
     if ( Point2f [ cd ] < ( root->Point2f [ cd ] ) )
         root->left = insertRec ( root->left, Point2f, depth + 1 );
@@ -189,7 +196,7 @@ Node *insertRec ( Node *root, int Point2f [ ], unsigned depth ) {
     return root;
 }
 
-// Function to insert a new kd::Point2f with given Point2f in
+// Function to insert a new Point2f with given Point2f in
 // KD Tree and return new root. It mainly uses above recursive
 // function "insertRec()"
 Node* insert ( Node *root, int Point2f [ ] ) {
@@ -308,16 +315,16 @@ Node* deleteNode ( Node *root, int Point2f [ ] ) {
 
 // Driver program to test above functions
 int main8798797 ( ) {
-    struct Node *root = NULL;
-    int points [ ] [ k ] = { {30, 40}, {5, 25}, {70, 70},
-                      {10, 12}, {50, 30}, {35, 45} };
+    struct Node *root = nullptr;
+    int points [ ] [ k ] = { {30, 40}, {5, 25}, {70, 70}, {10, 12}, {50, 30}, {35, 45} };
 
-    int n = sizeof ( points ) / sizeof ( points [ 0 ] );
+    constexpr int n = sizeof ( points ) / sizeof ( points [ 0 ] );
 
-    for ( int i = 0; i < n; i++ )
+    for ( int i = 0; i < n; i++ ) {
         root = insert ( root, points [ i ] );
+    }
 
-    // Delet (30, 40);
+    // Delete (30, 40);
     root = deleteNode ( root, points [ 0 ] );
 
     cout << "Root after deletion of (30, 40)\n";
@@ -363,7 +370,7 @@ struct KDTree {
     }
 };
 
-int wmain ( ) {
+int wmain77897897 ( ) {
 
     splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
@@ -891,4 +898,144 @@ int main789789 ( ) {
     std::cout << f2 << nl;
 
     return EXIT_SUCCESS;
+}
+
+
+
+
+#include "kdtree2.hpp"
+
+#include <boost/multi_array.hpp>
+
+splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+std::uniform_real_distribution<float> disy { 0.0f, 100'000.0f };
+std::uniform_real_distribution<float> disx { 0.0f,  40'000.0f };
+
+//
+// define, for convenience a 2d array of floats.
+//
+typedef boost::multi_array<float, 2> array2dfloat;
+
+
+double time_a_search ( kdtree2::KDTree* tree, int nsearch ) {
+
+    const int dim = tree->dim;
+    std::vector<float> query ( dim );
+    kdtree2::KDTreeResultVector result;
+
+    plf::nanotimer timer;
+
+    timer.start ( );
+
+    for ( int i = 0; i < nsearch; i++ ) {
+        query [ 0 ] = disx ( rng ); query [ 1 ] = disy ( rng );
+        tree->n_nearest ( query, 1, result );
+    }
+
+    return timer.get_elapsed_us ( ) / 1'000'000.0;
+}
+
+double time_a_search ( kd::Tree2D<float> & tree, int nsearch ) {
+
+    plf::nanotimer timer;
+
+    kd::Point2f ptf;
+
+    timer.start ( );
+
+    for ( int i = 0; i < nsearch; i++ ) {
+        ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+    }
+
+    return timer.get_elapsed_us ( ) / 1'000'000.0;
+}
+
+void time_random_searches ( kdtree2::KDTree* tree ) {
+
+  // emit the number of searches per second.
+
+    int nsearch;
+
+    nsearch = 50;
+
+    while ( true ) {
+        double t = time_a_search ( tree, nsearch );
+        if ( t < 1.0 ) {
+            nsearch *= 5;
+            continue;
+        }
+        else {
+            std::uint64_t sps = double ( nsearch ) / t;
+            std::cout << "C++ impl, for nn=" << '1' << " searches/sec = " << sps << "\n";
+            return;
+        }
+    }
+}
+
+void time_random_searches ( kd::Tree2D<float> & tree ) {
+
+  // emit the number of searches per second.
+
+    int nsearch;
+
+    nsearch = 50;
+
+    while ( true ) {
+        double t = time_a_search ( tree, nsearch );
+        if ( t < 1.0 ) {
+            nsearch *= 5;
+            continue;
+        }
+        else {
+            std::uint64_t sps = double ( nsearch ) / t;
+            std::cout << "C++ impl, for nn=" << '1' << " searches/sec = " << sps << "\n";
+            return;
+        }
+    }
+}
+
+int main ( ) {
+
+    int N = 10'000'000, dim = 2;
+
+    {
+        plf::nanotimer timer;
+
+        array2dfloat realdata;
+        realdata.resize ( boost::extents [ N ] [ dim ] );
+        for ( int i = 0; i < N; i++ ) {
+            realdata [ i ] [ 0 ] = disx ( rng );
+            realdata [ i ] [ 1 ] = disy ( rng );
+        }
+
+        kdtree2::KDTree* tree;
+        kdtree2::KDTreeResultVector res;
+
+        timer.start ( );
+        tree = new kdtree2::KDTree ( realdata, true );
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        time_random_searches ( tree );
+
+        std::cout << nl;
+
+        free ( tree );
+    }
+
+    {
+        plf::nanotimer timer;
+
+        std::vector<kd::Point2f> points;
+        for ( int i = 0; i < N; ++i ) {
+            points.emplace_back ( disx ( rng ), disy ( rng ) );
+        }
+
+        timer.start ( );
+        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
+
+        time_random_searches ( tree );
+
+        std::cout << nl;
+    }
 }
