@@ -1053,17 +1053,18 @@ struct PQType {
     Point point;
     base_type value;
 
-    PQType ( ) noexcept = default;
+    //PQType ( ) noexcept = default;
     PQType ( const PQType & ) noexcept = default;
-    PQType ( PQType && ) noexcept = default;
-    PQType ( const Point & p_, const base_type & value_ ) noexcept :
-        point { p_ }, value { value_ } {
-    }
-    PQType ( Point && p_, base_type && value_ ) noexcept :
-        point { std::move ( p_ ) }, value { std::move ( value_ ) } {
-    }
+    //PQType ( PQType && ) noexcept = default;
+    //PQType ( const Point & p_, const base_type & value_ ) noexcept :
+    //    point { p_ }, value { value_ } {
+    //}
+    //PQType ( Point && p_, base_type && value_ ) noexcept :
+    //    point { std::move ( p_ ) }, value { std::move ( value_ ) } {
+    //}
     PQType ( base_type && x_, base_type && y_, base_type && value_ ) noexcept :
         point { std::move ( x_ ), std::move ( y_ ) }, value { std::move ( value_ ) } {
+        std::cout << "created\n";
     }
 
     [[ maybe_unused ]] PQType & operator = ( const PQType & ) noexcept = default;
@@ -1081,7 +1082,7 @@ struct PQType {
 
 
 template<typename Point>
-using PQueue = std::priority_queue<PQType<Point>, std::vector<PQType<Point>>, std::greater<PQType<Point>> > ;
+using PQueue = sorted_vector_set<PQType<Point>, std::vector<PQType<Point>>, std::greater<PQType<Point>> > ;
 
 
 int wmain ( ) {
@@ -1092,9 +1093,9 @@ int wmain ( ) {
 
     PQueue<kd::Point2f> pq;
 
-    for ( int i = 0; i < 500; ++i ) {
+    //for ( int i = 0; i < 500; ++i ) {
         pq.emplace ( pdisx ( rng ), pdisy ( rng ), pdisv ( rng ) );
-    }
+    //}
 
     std::cout << pq.top ( ).point << ' ' << pq.top ( ).value << nl;
 
