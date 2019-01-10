@@ -35,5 +35,8 @@
     <ClInclude Include="kdtree2.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sorted_vector_set.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

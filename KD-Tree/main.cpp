@@ -994,9 +994,9 @@ void time_random_searches ( kd::Tree2D<float> & tree ) {
     }
 }
 
-int main ( ) {
+int main684984 ( ) {
 
-    int N = 10'000'000, dim = 2;
+    int N = 100'000'000, dim = 2;
 
     {
         plf::nanotimer timer;
@@ -1038,4 +1038,62 @@ int main ( ) {
 
         std::cout << nl;
     }
+
+    return EXIT_SUCCESS;
+}
+
+
+#include <queue>
+
+template<typename Point>
+struct PQType {
+
+    using base_type = decltype ( Point { }.x );
+
+    Point point;
+    base_type value;
+
+    PQType ( ) noexcept = default;
+    PQType ( const PQType & ) noexcept = default;
+    PQType ( PQType && ) noexcept = default;
+    PQType ( const Point & p_, const base_type & value_ ) noexcept :
+        point { p_ }, value { value_ } {
+    }
+    PQType ( Point && p_, base_type && value_ ) noexcept :
+        point { std::move ( p_ ) }, value { std::move ( value_ ) } {
+    }
+    PQType ( base_type && x_, base_type && y_, base_type && value_ ) noexcept :
+        point { std::move ( x_ ), std::move ( y_ ) }, value { std::move ( value_ ) } {
+    }
+
+    [[ maybe_unused ]] PQType & operator = ( const PQType & ) noexcept = default;
+    [[ maybe_unused ]] PQType & operator = ( PQType && ) noexcept = default;
+
+    [[ nodiscard ]] bool operator < ( const PQType & p_ ) const noexcept {
+        return value < p_.value;
+    }
+    [[ nodiscard ]] bool operator > ( const PQType & p_ ) const noexcept {
+        return value > p_.value;
+    }
+};
+
+template<typename Point>
+using PQueue = std::priority_queue<PQType<Point>, std::vector<PQType<Point>>, std::greater<PQType<Point>>>;
+
+
+int wmain ( ) {
+
+    std::uniform_real_distribution<float> pdisy { 0.0f, 100'000.0f };
+    std::uniform_real_distribution<float> pdisx { 0.0f,  40'000.0f };
+    std::uniform_real_distribution<float> pdisv { 0.0f,  100.0f };
+
+    PQueue<kd::Point2f> pq;
+
+    for ( int i = 0; i < 5; ++i ) {
+        pq.emplace ( pdisx ( rng ), pdisy ( rng ), pdisv ( rng ) );
+    }
+
+    std::cout << pq.top ( ).point << ' ' << pq.top ( ).value << nl;
+
+    return EXIT_SUCCESS;
 }

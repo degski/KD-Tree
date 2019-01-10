@@ -220,6 +220,7 @@
     <ClInclude Include="kdtree.h" />
     <ClInclude Include="ikdtree.hpp" />
     <ClInclude Include="kdtree2.hpp" />
+    <ClInclude Include="sorted_vector_set.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
