@@ -68,7 +68,6 @@ public:
         }
         return it;
     }
-
     [[ nodiscard ]] const_iterator find ( const_reference t_ ) const noexcept {
         const const_iterator it = lower_bound ( t_ );
         if ( std::cend ( m_data ) == it or Compare ( ) ( *it, t_ ) ) {
@@ -106,7 +105,7 @@ public:
     // the set will no longer be sorted (the part of the key used for sorting should be
     // equal to the value of that part of the key of the update).
     [[ maybe_unused ]] iterator insert_or_update_unsafe ( const_reference t_ ) noexcept {
-        const iterator it = lower_bound ( t_ );
+        iterator it = lower_bound ( t_ );
         if ( it == m_data.end ( ) or Compare ( ) ( t_, *it ) ) {
             it = m_data.insert ( it, t_ );
         }
@@ -119,7 +118,7 @@ public:
     template<typename ... Args>
     [[ maybe_unused ]] iterator emplace_or_update_unsafe ( Args && ... args_ ) noexcept {
         rv_reference t { std::forward<Args&&> ( args_ ) ... };
-        const iterator it = lower_bound ( t );
+        iterator it = lower_bound ( t );
         if ( it == m_data.end ( ) or Compare ( ) ( t, *it ) ) {
             it = m_data.emplace ( it, std::move ( t ) );
         }
@@ -188,6 +187,12 @@ public:
     [[ nodiscard ]] const_iterator lower_bound ( const_reference t_ ) const noexcept {
         return std::lower_bound ( std::cbegin ( m_data ), std::cend ( m_data ), t_, Compare ( ) );
     }
+    [[ nodiscard ]] iterator upper_bound ( const_reference t_ ) noexcept {
+        return std::upper_bound ( std::begin ( m_data ), std::end ( m_data ), t_, Compare ( ) );
+    }
+    [[ nodiscard ]] const_iterator upper_bound ( const_reference t_ ) const noexcept {
+        return std::upper_bound ( std::cbegin ( m_data ), std::cend ( m_data ), t_, Compare ( ) );
+    }
 
     [[ nodiscard ]] bool operator == ( const_reference rhs ) const noexcept {
         if ( size ( ) != rhs.size ( ) ) {
@@ -248,27 +253,14 @@ class sorted_vector_multiset {
     // Return iterator to an element with key equivalent to key. If no such
     // element is found, past-the-end iterator is returned.
     [[ nodiscard ]] iterator find ( const_reference t_ ) noexcept {
-        const iterator it = lower_bound ( t_ );
-        if ( std::end ( m_data ) == it or Compare ( ) ( *it, t_ ) ) {
-            return std::end ( m_data );
-        }
-        return it;
+        return lower_bound ( t_ );
     }
-
     [[ nodiscard ]] const_iterator find ( const_reference t_ ) const noexcept {
-        const const_iterator it = lower_bound ( t_ );
-        if ( std::cend ( m_data ) == it or Compare ( ) ( *it, t_ ) ) {
-            return std::cend ( m_data );
-        }
-        return it;
+        return lower_bound ( t_ );
     }
 
     [[ maybe_unused ]] iterator insert ( const_reference t_ ) noexcept {
-        const iterator it = lower_bound ( t_ );
-        if ( it == m_data.end ( ) or Compare ( ) ( t_, *it ) ) {
-            return m_data.insert ( it, t_ );
-        }
-        return it;
+        return m_data.insert ( lower_bound ( t_ ), t_ );
     }
     [[ maybe_unused ]] iterator insert ( const_iterator it_, const_reference t_ ) noexcept {
         return m_data.insert ( it_, t_ );
@@ -277,11 +269,7 @@ class sorted_vector_multiset {
     template<typename ... Args>
     [[ maybe_unused ]] iterator emplace ( Args && ... args_ ) noexcept {
         rv_reference t { std::forward<Args&&> ( args_ ) ... };
-        const iterator it = lower_bound ( t );
-        if ( it == m_data.end ( ) or Compare ( ) ( t, *it ) ) {
-            return m_data.emplace ( it, std::move ( t ) );
-        }
-        return it;
+        return m_data.emplace ( lower_bound ( t ), std::move ( t ) );
     }
     template<typename ... Args>
     [[ maybe_unused ]] iterator emplace ( const_iterator it_, Args && ... args_ ) noexcept {
@@ -292,8 +280,8 @@ class sorted_vector_multiset {
     // the set will no longer be sorted (the part of the key used for sorting should be
     // equal to the value of that part of the key of the update).
     [[ maybe_unused ]] iterator insert_or_update_unsafe ( const_reference t_ ) noexcept {
-        const iterator it = lower_bound ( t_ );
-        if ( it == m_data.end ( ) or Compare ( ) ( t_, *it ) ) {
+        iterator it = lower_bound ( t_ );
+        if ( it == m_data.end ( ) ) {
             it = m_data.insert ( it, t_ );
         }
         else {
@@ -305,8 +293,8 @@ class sorted_vector_multiset {
     template<typename ... Args>
     [[ maybe_unused ]] iterator emplace_or_update_unsafe ( Args && ... args_ ) noexcept {
         rv_reference t { std::forward<Args&&> ( args_ ) ... };
-        const iterator it = lower_bound ( t );
-        if ( it == m_data.end ( ) or Compare ( ) ( t, *it ) ) {
+        iterator it = lower_bound ( t );
+        if ( it == m_data.end ( ) ) {
             it = m_data.emplace ( it, std::move ( t ) );
         }
         else {

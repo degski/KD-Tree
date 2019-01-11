@@ -1119,7 +1119,7 @@ struct KNearest : public sorted_vector_set<PQType<Point>> {
 };
 
 
-int wmain ( ) {
+int wmain879808 ( ) {
 
     std::uniform_real_distribution<float> pdisv { 0.0f,  100.0f };
     std::uniform_real_distribution<float> pdisy { 0.0f, 100'000.0f };
@@ -1134,6 +1134,35 @@ int wmain ( ) {
     std::cout << knn.top ( ).point << ' ' << knn.top ( ).value << nl;
     std::cout << knn.bottom ( ).point << ' ' << knn.bottom ( ).value << nl;
     std::cout << knn.value ( ) << nl;
+
+    return EXIT_SUCCESS;
+}
+
+
+int wmain ( ) {
+
+    sorted_vector_multiset<int> ms { 1, 2, 3, 4, 5 };
+
+    for ( auto & v : ms ) {
+        std::cout << v << ' ';
+    }
+    std::cout << nl;
+
+    std::cout << *ms.lower_bound ( 3 ) << nl;
+
+    ms.insert ( 3 );
+
+    for ( auto & v : ms ) {
+        std::cout << v << ' ';
+    }
+    std::cout << nl;
+
+    ms.insert ( 0 );
+
+    for ( auto & v : ms ) {
+        std::cout << v << ' ';
+    }
+    std::cout << nl;
 
     return EXIT_SUCCESS;
 }
