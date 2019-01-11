@@ -838,7 +838,11 @@ void print_bits ( const T n ) noexcept {
 
 union tagged_float {
 
-    explicit tagged_float ( ) noexcept {
+    explicit tagged_float ( const bool tag_ = false ) noexcept {
+        if ( tag_ )
+            i = 0b0000'0000'0000'0000'0000'0000'0000'0001;
+        else
+            value = 0.0f;
     }
     explicit tagged_float ( const float & f_ ) noexcept :
         value { f_ } {
@@ -861,7 +865,7 @@ union tagged_float {
             i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
     }
 
-    bool is_tagged ( ) const noexcept {
+    [[ nodiscard ]] bool is_tagged ( ) const noexcept {
         return i & 0b0000'0000'0000'0000'0000'0000'0000'0001;
     }
 
@@ -871,7 +875,7 @@ union tagged_float {
         return out_;
     }
 
-    float value = 0.0f;
+    float value;
 
     private:
 
@@ -880,7 +884,11 @@ union tagged_float {
 
 union tagged_double {
 
-    explicit tagged_double ( ) noexcept {
+    explicit tagged_double ( const bool tag_ = false ) noexcept {
+        if ( tag_ )
+            i = 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
+        else
+            value = 0.0;
     }
     explicit tagged_double ( const double & d_ ) noexcept :
         value { d_ } {
@@ -903,7 +911,7 @@ union tagged_double {
             i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
     }
 
-    bool is_tagged ( ) const noexcept {
+    [[ nodiscard ]] bool is_tagged ( ) const noexcept {
         return i & 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
     }
 
@@ -913,7 +921,7 @@ union tagged_double {
         return out_;
     }
 
-    double value = 0.0;
+    double value;
 
     private:
 
