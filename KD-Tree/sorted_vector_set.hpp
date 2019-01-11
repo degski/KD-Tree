@@ -115,7 +115,7 @@ public:
     // the set will no longer be sorted (the part of the key used for sorting should be
     // equal to the value of that part of the key of the update).
     [[ maybe_unused ]] iterator insert_or_update_unsafe ( const_reference t_ ) noexcept {
-        iterator it = lower_bound ( t_ );
+        const iterator it = lower_bound ( t_ );
         if ( it == m_data.end ( ) or Compare ( ) ( t_, *it ) ) {
             it = m_data.insert ( it, t_ );
         }
@@ -128,7 +128,7 @@ public:
     template<typename ... Args>
     [[ maybe_unused ]] iterator emplace_or_update_unsafe ( Args ... args_ ) noexcept {
         rv_reference t { std::forward<Args> ( args_ ) ... };
-        iterator it = lower_bound ( t );
+        const iterator it = lower_bound ( t );
         if ( it == m_data.end ( ) or Compare ( ) ( t, *it ) ) {
             it = m_data.emplace ( it, std::move ( t ) );
         }
@@ -202,10 +202,10 @@ public:
             return false;
         }
         if constexpr ( std::is_pod<T>::value ) {
-            std::memcmp ( m_data.data ( ), rhs.m_data.data ( ), sizeof ( T ) * size ( ) ) == 0;
+            return std::memcmp ( m_data.data ( ), rhs.m_data.data ( ), sizeof ( T ) * size ( ) ) == 0;
         }
         else {
-            std::equal ( begin ( ), end ( ), rhs.begin ( ) );
+            return std::equal ( begin ( ), end ( ), rhs.begin ( ) );
         }
     }
 

@@ -1093,9 +1093,9 @@ int wmain ( ) {
 
     PQueue<kd::Point2f> pq;
 
-    //for ( int i = 0; i < 500; ++i ) {
+    for ( int i = 0; i < 500; ++i ) {
         pq.emplace ( pdisx ( rng ), pdisy ( rng ), pdisv ( rng ) );
-    //}
+    }
 
     std::cout << pq.top ( ).point << ' ' << pq.top ( ).value << nl;
 
