@@ -1102,8 +1102,7 @@ struct KNearest : public sorted_vector_set<PQType<Point>> {
 
     using base_type = typename value_type::base_type;
 
-    KNearest ( const std::size_t s_ ) : base::sorted_vector_set ( s_ ) {
-    }
+    KNearest ( const std::size_t s_ ) : base::sorted_vector_set ( s_ ) { }
 
     template<typename ... Args>
     void emplace ( base_type && value_, Args && ... args_ ) noexcept {
