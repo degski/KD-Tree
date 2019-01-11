@@ -1050,18 +1050,18 @@ struct PQType {
 
     using base_type = decltype ( Point { }.x );
 
-    base_type value;
+    base_type value = std::numeric_limits<base_type>::max ( );
     Point point;
 
-    //PQType ( ) noexcept = default;
+    PQType ( ) noexcept = default;
     PQType ( const PQType & ) noexcept = default;
-    //PQType ( PQType && ) noexcept = default;
-    //PQType ( const base_type & value_, const Point & p_ ) noexcept :
-    //    value { value_ }, point { p_ } {
-    //}
-    //PQType ( base_type && value_, Point && p_ ) noexcept :
-    //    value { std::move ( value_ ) }, point { std::move ( p_ ) } {
-    //}
+    PQType ( PQType && ) noexcept = default;
+    PQType ( const base_type & value_, const Point & p_ ) noexcept :
+        value { value_ }, point { p_ } {
+    }
+    PQType ( base_type && value_, Point && p_ ) noexcept :
+        value { std::move ( value_ ) }, point { std::move ( p_ ) } {
+    }
     PQType ( base_type && value_, base_type && x_, base_type && y_ ) noexcept :
         value { std::move ( value_ ) }, point { std::move ( x_ ), std::move ( y_ ) } {
     }
@@ -1102,19 +1102,13 @@ struct KNearest : public sorted_vector_set<PQType<Point>> {
 
     using base_type = typename value_type::base_type;
 
-    KNearest ( const std::size_t s_ ) {
-        base::reserve ( s_ );
+    KNearest ( const std::size_t s_ ) : base::sorted_vector_set ( s_ ) {
     }
 
     template<typename ... Args>
     void emplace ( base_type && value_, Args && ... args_ ) noexcept {
-        if ( base::size ( ) == base::capacity ( ) ) {
-            if ( base::top ( ).value > value_ ) {
-                base::pop ( );
-                base::emplace ( std::move ( value_ ), std::forward<Args> ( args_ ) ... );
-            }
-        }
-        else {
+        if ( base::top ( ).value > value_ ) {
+            base::pop ( );
             base::emplace ( std::move ( value_ ), std::forward<Args> ( args_ ) ... );
         }
     }

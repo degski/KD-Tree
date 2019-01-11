@@ -51,6 +51,7 @@ public:
     using const_iterator = typename container::const_iterator;
 
     sorted_vector_set ( ) noexcept { }
+    sorted_vector_set ( const std::size_t s_ ) : m_data { s_ } { }
     sorted_vector_set ( std::initializer_list<T> init ) : m_data { std::forward<std::initializer_list<T>> ( init ) } { }
     sorted_vector_set ( const sorted_vector_set & svs ) : m_data ( svs.m_data ) { }
     sorted_vector_set ( sorted_vector_set && svs ) noexcept : m_data ( std::forward<container> ( svs.m_data ) ) { std::cout << "svs move constructed\n"; }
