@@ -34,7 +34,7 @@
 #include <utility>
 
 
-template<typename T, typename Container, typename Compare = std::less<T>>
+template<typename T, typename Container = std::vector<T>, typename Compare = std::less<T>>
 class sorted_vector_set {
 
 public:
@@ -47,8 +47,8 @@ public:
     using size_type = std::size_t;
     using value_type = T;
     using container = Container;
-    using iterator = typename Container::iterator;
-    using const_iterator = typename Container::const_iterator;
+    using iterator = typename container::iterator;
+    using const_iterator = typename container::const_iterator;
 
     sorted_vector_set ( ) noexcept { }
     sorted_vector_set ( std::initializer_list<T> init ) : m_data { std::forward<std::initializer_list<T>> ( init ) } { }
@@ -56,12 +56,11 @@ public:
     sorted_vector_set ( sorted_vector_set && svs ) noexcept : m_data ( std::forward<container> ( svs.m_data ) ) { std::cout << "svs move constructed\n"; }
 
     ~sorted_vector_set ( ) {
-
         if ( not ( m_data.empty ( ) ) ) { // Has not been moved from.
-            std::cout << "svs destroyed" << std::endl;
+            // std::cout << "svs destroyed" << std::endl;
         }
         else {
-            std::cout << "svs was moved from" << std::endl;
+            // std::cout << "svs was moved from" << std::endl;
         }
     }
 
@@ -98,8 +97,8 @@ public:
     }
 
     template<typename ... Args>
-    [[ maybe_unused ]] iterator emplace ( Args ... args_ ) noexcept {
-        rv_reference t { std::forward<Args> ( args_ ) ... };
+    [[ maybe_unused ]] iterator emplace ( Args && ... args_ ) noexcept {
+        rv_reference t { std::forward<Args&&> ( args_ ) ... };
         const iterator it = lower_bound ( t );
         if ( it == m_data.end ( ) or Compare ( ) ( t, *it ) ) {
             return m_data.emplace ( it, std::move ( t ) );
@@ -107,8 +106,8 @@ public:
         return it;
     }
     template<typename ... Args>
-    [[ maybe_unused ]] iterator emplace ( const_iterator it_, Args ... args_ ) noexcept {
-        return m_data.emplace ( it_, std::forward<Args> ( args_ )... );
+    [[ maybe_unused ]] iterator emplace ( const_iterator it_, Args && ... args_ ) noexcept {
+        return m_data.emplace ( it_, std::forward<Args&&> ( args_ )... );
     }
 
     // IMPORTANT: Changes the value, i.e. the key, if this does not respect the sort-order,
@@ -126,8 +125,8 @@ public:
     }
 
     template<typename ... Args>
-    [[ maybe_unused ]] iterator emplace_or_update_unsafe ( Args ... args_ ) noexcept {
-        rv_reference t { std::forward<Args> ( args_ ) ... };
+    [[ maybe_unused ]] iterator emplace_or_update_unsafe ( Args && ... args_ ) noexcept {
+        rv_reference t { std::forward<Args&&> ( args_ ) ... };
         const iterator it = lower_bound ( t );
         if ( it == m_data.end ( ) or Compare ( ) ( t, *it ) ) {
             it = m_data.emplace ( it, std::move ( t ) );
@@ -176,6 +175,7 @@ public:
 
     void reserve ( const size_type r_ ) { m_data.reserve ( r_ ); }
     void clear ( ) noexcept { m_data.clear ( ); }
+    void resize ( const std::size_t s_ ) { m_data.resize ( ); }
 
     [[ nodiscard ]] size_type size ( ) const noexcept { return m_data.size ( ); }
     [[ nodiscard ]] size_type capacity ( ) const noexcept { return m_data.capacity ( ); }

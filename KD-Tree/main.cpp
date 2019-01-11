@@ -1050,21 +1050,20 @@ struct PQType {
 
     using base_type = decltype ( Point { }.x );
 
-    Point point;
     base_type value;
+    Point point;
 
     //PQType ( ) noexcept = default;
     PQType ( const PQType & ) noexcept = default;
     //PQType ( PQType && ) noexcept = default;
-    //PQType ( const Point & p_, const base_type & value_ ) noexcept :
-    //    point { p_ }, value { value_ } {
+    //PQType ( const base_type & value_, const Point & p_ ) noexcept :
+    //    value { value_ }, point { p_ } {
     //}
-    //PQType ( Point && p_, base_type && value_ ) noexcept :
-    //    point { std::move ( p_ ) }, value { std::move ( value_ ) } {
+    //PQType ( base_type && value_, Point && p_ ) noexcept :
+    //    value { std::move ( value_ ) }, point { std::move ( p_ ) } {
     //}
-    PQType ( base_type && x_, base_type && y_, base_type && value_ ) noexcept :
-        point { std::move ( x_ ), std::move ( y_ ) }, value { std::move ( value_ ) } {
-        std::cout << "created\n";
+    PQType ( base_type && value_, base_type && x_, base_type && y_ ) noexcept :
+        value { std::move ( value_ ) }, point { std::move ( x_ ), std::move ( y_ ) } {
     }
 
     [[ maybe_unused ]] PQType & operator = ( const PQType & ) noexcept = default;
@@ -1082,22 +1081,66 @@ struct PQType {
 
 
 template<typename Point>
-using PQueue = sorted_vector_set<PQType<Point>, std::vector<PQType<Point>>, std::greater<PQType<Point>> > ;
+using PQueue = sorted_vector_set<PQType<Point>>;
+
+
+template<typename Point>
+struct KNearest : public sorted_vector_set<PQType<Point>> {
+
+    using base = sorted_vector_set<PQType<Point>>;
+
+    using typename base::reference;
+    using typename base::rv_reference;
+    using typename base::const_reference;
+    using typename base::pointer;
+    using typename base::const_pointer;
+    using typename base::size_type;
+    using typename base::value_type;
+    using typename base::container;
+    using iterator = typename container::iterator;
+    using const_iterator = typename container::const_iterator;
+
+    using base_type = typename value_type::base_type;
+
+    KNearest ( const std::size_t s_ ) {
+        base::reserve ( s_ );
+    }
+
+    template<typename ... Args>
+    void emplace ( base_type && value_, Args && ... args_ ) noexcept {
+        if ( base::size ( ) == base::capacity ( ) ) {
+            if ( base::top ( ).value > value_ ) {
+                base::pop ( );
+                base::emplace ( std::move ( value_ ), std::forward<Args> ( args_ ) ... );
+            }
+        }
+        else {
+            base::emplace ( std::move ( value_ ), std::forward<Args> ( args_ ) ... );
+        }
+    }
+
+    [[ nodiscard ]] const_reference bottom ( ) const noexcept { return base::bottom ( ); }
+    [[ nodiscard ]] const_reference top ( ) const noexcept { return base::top ( ); }
+
+    [[ nodiscard ]] base_type value ( ) const noexcept { return base::top ( ).value; }
+};
 
 
 int wmain ( ) {
 
+    std::uniform_real_distribution<float> pdisv { 0.0f,  100.0f };
     std::uniform_real_distribution<float> pdisy { 0.0f, 100'000.0f };
     std::uniform_real_distribution<float> pdisx { 0.0f,  40'000.0f };
-    std::uniform_real_distribution<float> pdisv { 0.0f,  100.0f };
 
-    PQueue<kd::Point2f> pq;
+    KNearest<kd::Point2f> knn ( 50u );
 
     for ( int i = 0; i < 500; ++i ) {
-        pq.emplace ( pdisx ( rng ), pdisy ( rng ), pdisv ( rng ) );
+        knn.emplace ( pdisv ( rng ), pdisx ( rng ), pdisy ( rng ) );
     }
 
-    std::cout << pq.top ( ).point << ' ' << pq.top ( ).value << nl;
+    std::cout << knn.top ( ).point << ' ' << knn.top ( ).value << nl;
+    std::cout << knn.bottom ( ).point << ' ' << knn.bottom ( ).value << nl;
+    std::cout << knn.value ( ) << nl;
 
     return EXIT_SUCCESS;
 }
