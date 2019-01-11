@@ -836,21 +836,29 @@ void print_bits ( const T n ) noexcept {
 }
 
 
-union tfloat {
+union tagged_float {
 
-    tfloat ( const float & num_, const bool tag_ = false ) noexcept :
-        f { num_ } {
-        i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
-        if ( tag_ ) {
-            i |= 0b0000'0000'0000'0000'0000'0000'0000'0001;
-        }
+    explicit tagged_float ( ) noexcept {
     }
-    tfloat ( float && num_ = 0.0f, const bool tag_ = false ) noexcept :
-        f { std::move ( num_  ) } {
-        i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
-        if ( tag_ ) {
+    explicit tagged_float ( const float & f_ ) noexcept :
+        value { f_ } {
+    }
+    explicit tagged_float ( float && f_ ) noexcept :
+        value { std::move ( f_ ) } {
+    }
+    explicit tagged_float ( const float & f_, const bool tag_ ) noexcept :
+        value { f_ } {
+        if ( tag_ )
             i |= 0b0000'0000'0000'0000'0000'0000'0000'0001;
-        }
+        else
+            i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
+    }
+    explicit tagged_float ( float && f_, const bool tag_ ) noexcept :
+        value { std::move ( f_  ) } {
+        if ( tag_ )
+            i |= 0b0000'0000'0000'0000'0000'0000'0000'0001;
+        else
+            i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
     }
 
     bool is_tagged ( ) const noexcept {
@@ -858,30 +866,41 @@ union tfloat {
     }
 
     template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tfloat f_ ) noexcept {
-        out_ << f_.f << ( f_.is_tagged ( ) ? '#' : ' ' );
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tagged_float & tf_ ) noexcept {
+        out_ << tf_.value << ( tf_.is_tagged ( ) ? '#' : ' ' );
         return out_;
     }
 
-    float f;
+    float value = 0.0f;
+
+    private:
+
     std::uint32_t i;
 };
 
-union tdouble {
+union tagged_double {
 
-    tdouble ( const double & num_, const bool tag_ = false ) noexcept :
-        d { num_ } {
-        i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
-        if ( tag_ ) {
-            i |= 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
-        }
+    explicit tagged_double ( ) noexcept {
     }
-    tdouble ( double && num_ = 0.0, const bool tag_ = false ) noexcept :
-        d { std::move ( num_ ) } {
-        i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
-        if ( tag_ ) {
+    explicit tagged_double ( const double & d_ ) noexcept :
+        value { d_ } {
+    }
+    explicit tagged_double ( double && d_ ) noexcept :
+        value { std::move ( d_ ) } {
+    }
+    explicit tagged_double ( const double & d_, const bool tag_ ) noexcept :
+        value { d_ } {
+        if ( tag_ )
             i |= 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
-        }
+        else
+            i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
+    }
+    explicit tagged_double ( double && d_, const bool tag_ ) noexcept :
+        value { std::move ( d_ ) } {
+        if ( tag_ )
+            i |= 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
+        else
+            i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
     }
 
     bool is_tagged ( ) const noexcept {
@@ -889,23 +908,30 @@ union tdouble {
     }
 
     template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tdouble d_ ) noexcept {
-        out_ << d_.d << ( d_.is_tagged ( ) ? '#' : ' ' );
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tagged_double & td_ ) noexcept {
+        out_ << td_.value << ( td_.is_tagged ( ) ? '#' : ' ' );
         return out_;
     }
 
-    double d;
+    double value = 0.0;
+
+    private:
+
     std::uint64_t i;
 };
 
 
+template<typename R>
+using tagged_real = typename std::conditional<std::is_same<float, R>::value, tagged_float, tagged_double>::type;
+
+
 int wmain ( ) {
 
-    tfloat f1 { 7.1f, true };
+    tagged_real<float> f1 { 7.1f, true };
 
     std::cout << f1 << nl;
 
-    tfloat f2 { 1.9f };
+    tagged_float f2 { 1.9f, false };
 
     std::cout << f2 << nl;
 
