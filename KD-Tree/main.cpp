@@ -857,6 +857,12 @@ union tfloat {
         return i & 0b0000'0000'0000'0000'0000'0000'0000'0001;
     }
 
+    template<typename Stream>
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tfloat f_ ) noexcept {
+        out_ << f_.f << ( f_.is_tagged ( ) ? '#' : ' ' );
+        return out_;
+    }
+
     float f;
     std::uint32_t i;
 };
@@ -882,6 +888,12 @@ union tdouble {
         return i & 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
     }
 
+    template<typename Stream>
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tdouble d_ ) noexcept {
+        out_ << d_.d << ( d_.is_tagged ( ) ? '#' : ' ' );
+        return out_;
+    }
+
     double d;
     std::uint64_t i;
 };
@@ -889,17 +901,13 @@ union tdouble {
 
 int wmain ( ) {
 
-    tfloat f1 { -22661.6516651175f, true };
+    tfloat f1 { 7.1f, true };
 
-    std::cout << f1.f << std::boolalpha << ' ' << f1.is_tagged ( ) << nl;
+    std::cout << f1 << nl;
 
-    tfloat f2 { -76767.567568f, false };
+    tfloat f2 { 1.9f };
 
-    std::cout << f2.f << std::boolalpha << ' ' << f2.is_tagged ( ) << nl;
-
-    tdouble d1 { -22661.6516651175, true };
-
-    std::cout << d1.d << std::boolalpha << ' ' << d1.is_tagged ( ) << nl;
+    std::cout << f2 << nl;
 
     return EXIT_SUCCESS;
 }
