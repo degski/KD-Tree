@@ -305,10 +305,10 @@ class sorted_vector_multiset {
 
     // IMPORTANT: Changes the value, i.e. the key AND ASSUMES THE VALUE EXISTS.
     void update_unsafe ( const_reference t_ ) noexcept {
-        *lower_bound ( t_ ) = t_;
+        * lower_bound ( t_ ) = t_;
     }
     void update_unsafe ( rv_reference t_ ) noexcept {
-        *lower_bound ( t_ ) = std::move ( t_ );
+        * lower_bound ( t_ ) = std::move ( t_ );
     }
 
     // Gives direct acces to the underlying container, irrespective of ordering.
