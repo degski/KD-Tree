@@ -835,67 +835,71 @@ void print_bits ( const T n ) noexcept {
     }
 }
 
-constexpr std::uint32_t bit1 = 0b0000'0000'0000'0000'0000'0000'0000'0001;
-constexpr std::uint32_t bits31 = ~bit1;
 
-union float_type {
+union tfloat {
 
-    float_type ( const float & num_ ) noexcept :
-        f ( num_ ) {
+    tfloat ( const float & num_, const bool tag_ = false ) noexcept :
+        f { num_ } {
+        i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
+        if ( tag_ ) {
+            i |= 0b0000'0000'0000'0000'0000'0000'0000'0001;
+        }
     }
-    float_type ( float && num_ = 0.0f ) noexcept :
-        f ( std::move ( num_ ) ) {
-    }
-    float_type ( std::uint32_t && num_ = 0u ) noexcept :
-        i ( std::move ( num_ ) ) {
-    }
-
-    // Portable extraction of components.
-
-    bool is_negative ( ) const noexcept { return i & ( 1u << 31 ); }
-    std::uint32_t exponent ( ) const noexcept { return ( i >> 23 ) & 0xFF; }
-    std::uint32_t mantissa ( ) const noexcept { return i & ( ( 1 << 23 ) - 1 ); }
-
-    void tag ( ) noexcept {
-        i |= bit1;
+    tfloat ( float && num_ = 0.0f, const bool tag_ = false ) noexcept :
+        f { std::move ( num_  ) } {
+        i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
+        if ( tag_ ) {
+            i |= 0b0000'0000'0000'0000'0000'0000'0000'0001;
+        }
     }
 
-    void clear_low_bit ( ) noexcept {
-        i &= bits31;
+    bool is_tagged ( ) const noexcept {
+        return i & 0b0000'0000'0000'0000'0000'0000'0000'0001;
     }
 
-    template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const float_type & f_ ) noexcept {
-        print_bits ( f_.i );
-        std::cout << ' ' << f_.f;
-        return out_;
-    }
-
-    std::uint32_t i;
     float f;
+    std::uint32_t i;
+};
+
+union tdouble {
+
+    tdouble ( const double & num_, const bool tag_ = false ) noexcept :
+        d { num_ } {
+        i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
+        if ( tag_ ) {
+            i |= 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
+        }
+    }
+    tdouble ( double && num_ = 0.0, const bool tag_ = false ) noexcept :
+        d { std::move ( num_ ) } {
+        i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
+        if ( tag_ ) {
+            i |= 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
+        }
+    }
+
+    bool is_tagged ( ) const noexcept {
+        return i & 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
+    }
+
+    double d;
+    std::uint64_t i;
 };
 
 
+int wmain ( ) {
 
-int main789789 ( ) {
+    tfloat f1 { -22661.6516651175f, true };
 
-    float_type f { -22661.6516651175f };
+    std::cout << f1.f << std::boolalpha << ' ' << f1.is_tagged ( ) << nl;
 
-    std::cout << f.exponent ( ) << ' ' << f.mantissa ( ) << nl;
+    tfloat f2 { -76767.567568f, false };
 
-    std::cout << f << nl;
+    std::cout << f2.f << std::boolalpha << ' ' << f2.is_tagged ( ) << nl;
 
-    f.tag ( );
+    tdouble d1 { -22661.6516651175, true };
 
-    std::cout << f.exponent ( ) << ' ' << f.mantissa ( ) << nl;
-
-    std::cout << f << nl;
-
-    float_type f2 { 0b1100'0001'1011'0110'0000'0000'0000'0001 };
-
-    std::cout << f2.exponent ( ) << ' ' << f2.mantissa ( ) << nl;
-
-    std::cout << f2 << nl;
+    std::cout << d1.d << std::boolalpha << ' ' << d1.is_tagged ( ) << nl;
 
     return EXIT_SUCCESS;
 }
@@ -1139,7 +1143,7 @@ int wmain879808 ( ) {
 }
 
 
-int wmain ( ) {
+int wmain64631 ( ) {
 
     sorted_vector_multiset<int> ms { 1, 2, 3, 4, 5 };
 
