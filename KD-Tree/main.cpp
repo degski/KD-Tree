@@ -836,112 +836,131 @@ void print_bits ( const T n ) noexcept {
 }
 
 
-union tagged_float {
+template<typename T = float>
+union tagged {
 
-    explicit tagged_float ( const bool tag_ = false ) noexcept {
+    using value_type = T;
+    using uintv_type = typename std::conditional<std::is_same<T, float>::value, std::uint32_t, std::uint64_t>::type;
+
+    static constexpr uintv_type one { 1u };
+    static constexpr uintv_type not_one { ~one };
+
+    explicit tagged ( const bool tag_ = false ) noexcept {
         if ( tag_ )
-            i = 0b0000'0000'0000'0000'0000'0000'0000'0001;
+            i = one;
         else
-            value = 0.0f;
+            value = value_type { 0 };
     }
-    explicit tagged_float ( const float & f_ ) noexcept :
-        value { f_ } {
-    }
-    explicit tagged_float ( float && f_ ) noexcept :
-        value { std::move ( f_ ) } {
-    }
-    explicit tagged_float ( const float & f_, const bool tag_ ) noexcept :
-        value { f_ } {
+    explicit tagged ( const tagged & tr_ ) noexcept :
+        value { tr_.value } { }
+    explicit tagged ( tagged && tr_ ) noexcept :
+        value { std::move ( tr_.value ) } { }
+    explicit tagged ( const tagged & tr_, const bool tag_ ) noexcept :
+        value { tr_.value } {
         if ( tag_ )
-            i |= 0b0000'0000'0000'0000'0000'0000'0000'0001;
+            i |= one;
         else
-            i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
+            i &= not_one;
     }
-    explicit tagged_float ( float && f_, const bool tag_ ) noexcept :
-        value { std::move ( f_  ) } {
+    explicit tagged ( tagged && tr_, const bool tag_ ) noexcept :
+        value { std::move ( tr_.value ) } {
         if ( tag_ )
-            i |= 0b0000'0000'0000'0000'0000'0000'0000'0001;
+            i |= one;
         else
-            i &= 0b1111'1111'1111'1111'1111'1111'1111'1110;
+            i &= not_one;
+    }
+    explicit tagged ( const value_type & d_ ) noexcept :
+        value { d_ } { }
+    explicit tagged ( value_type && d_ ) noexcept :
+        value { std::move ( d_ ) } { }
+    explicit tagged ( const value_type & d_, const bool tag_ ) noexcept :
+        value { d_ } {
+        if ( tag_ )
+            i |= one;
+        else
+            i &= not_one;
+    }
+    explicit tagged ( value_type && d_, const bool tag_ ) noexcept :
+        value { std::move ( d_ ) } {
+        if ( tag_ )
+            i |= one;
+        else
+            i &= not_one;
     }
 
     [[ nodiscard ]] bool is_tagged ( ) const noexcept {
-        return i & 0b0000'0000'0000'0000'0000'0000'0000'0001;
+        return i & one;
     }
 
     template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tagged_float & tf_ ) noexcept {
-        out_ << tf_.value << ( tf_.is_tagged ( ) ? '#' : ' ' );
-        return out_;
-    }
-
-    float value;
-
-    private:
-
-    std::uint32_t i;
-};
-
-union tagged_double {
-
-    explicit tagged_double ( const bool tag_ = false ) noexcept {
-        if ( tag_ )
-            i = 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
-        else
-            value = 0.0;
-    }
-    explicit tagged_double ( const double & d_ ) noexcept :
-        value { d_ } {
-    }
-    explicit tagged_double ( double && d_ ) noexcept :
-        value { std::move ( d_ ) } {
-    }
-    explicit tagged_double ( const double & d_, const bool tag_ ) noexcept :
-        value { d_ } {
-        if ( tag_ )
-            i |= 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
-        else
-            i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
-    }
-    explicit tagged_double ( double && d_, const bool tag_ ) noexcept :
-        value { std::move ( d_ ) } {
-        if ( tag_ )
-            i |= 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
-        else
-            i &= 0b1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1110;
-    }
-
-    [[ nodiscard ]] bool is_tagged ( ) const noexcept {
-        return i & 0b0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0001;
-    }
-
-    template<typename Stream>
-    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tagged_double & td_ ) noexcept {
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const tagged & td_ ) noexcept {
         out_ << td_.value << ( td_.is_tagged ( ) ? '#' : ' ' );
         return out_;
     }
 
-    double value;
+    value_type value;
 
     private:
 
-    std::uint64_t i;
+    uintv_type i;
 };
 
 
-template<typename R>
-using tagged_real = typename std::conditional<std::is_same<float, R>::value, tagged_float, tagged_double>::type;
+
+template<typename T = float>
+struct TaggedPoint2 {
+
+    using value_type = T;
+
+    tagged<value_type> x; value_type y;
+
+    TaggedPoint2 ( ) noexcept = default;
+    TaggedPoint2 ( const TaggedPoint2 & ) noexcept = default;
+    TaggedPoint2 ( TaggedPoint2 && ) noexcept = default;
+    TaggedPoint2 ( value_type && x_, value_type && y_ ) noexcept :
+        x { std::move ( x_ ) }, y { std::move ( y_ ) } {
+    }
+    TaggedPoint2 ( tagged<value_type> && x_, value_type && y_ ) noexcept :
+        x { std::move ( x_ ) }, y { std::move ( y_ ) } {
+    }
+
+    [[ maybe_unused ]] TaggedPoint2 & operator = ( const TaggedPoint2 & ) noexcept = default;
+    [[ maybe_unused ]] TaggedPoint2 & operator = ( TaggedPoint2 && ) noexcept = default;
+
+    [[ nodiscard ]] bool operator == ( const TaggedPoint2 & p_ ) const noexcept {
+        return x.value == p_.x.value and y == p_.y;
+    }
+    [[ nodiscard ]] bool operator != ( const TaggedPoint2 & p_ ) const noexcept {
+        return x.value != p_.x.value or y != p_.y;
+    }
+
+    template<typename Stream>
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const TaggedPoint2 & p_ ) noexcept {
+        if ( TaggedPoint2 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ )
+            out_ << '<' << p_.x << ' ' << p_.y << '>';
+        else
+            out_ << "<* *>";
+        return out_;
+    }
+};
 
 
 int wmain ( ) {
 
-    tagged_real<float> f1 { 7.1f, true };
+    tagged t1 { 7.1f, true };
 
-    std::cout << f1 << nl;
+    std::cout << t1 << nl;
 
-    tagged_float f2 { 1.9f, false };
 
-    std::cout << f2 << nl;
+    TaggedPoint2 tp1 ( { 7.1f, true }, 5.6f );
+
+    std::cout << tp1 << nl;
+
+    TaggedPoint2 tp2 { tagged { 7.1f, false }, 5.6f };
+
+    std::cout << tp2 << nl;
+
+    std::cout << std::boolalpha << ( tp1 == tp2 ) << nl;
 
     return EXIT_SUCCESS;
 }
