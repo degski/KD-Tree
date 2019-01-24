@@ -487,7 +487,7 @@ struct TreeMap2D {
     std::size_t m_dim;
     mutable nearest_data m_nearest;
 
-    static constexpr std::size_t m_linear_bound = 44u;
+    static constexpr std::size_t m_linear_bound = 1u;
 
     public:
 
@@ -602,7 +602,7 @@ struct TreeMap2D {
     template<typename Stream>
     [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const TreeMap2D & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
-            if constexpr ( 8u == sizeof ( mapped_type ) ) {
+            if constexpr ( 1u == sizeof ( mapped_type ) ) {
                 out_ << '<' << p.first << ' ' << static_cast<int> ( p.second ) << '>';
             }
             else {
