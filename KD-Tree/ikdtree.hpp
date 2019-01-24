@@ -567,6 +567,14 @@ struct TreeMap2D {
         return m_nearest.found;
     }
 
+    [[ nodiscard ]] base_type nearest_distance ( ) const noexcept {
+        return m_nearest.min_distance;
+    }
+
+    [[ nodiscard ]] std::pair<mapped_type, base_type> nearest ( const key_type & point_ ) const noexcept {
+        return { nearest_ptr ( point_ )->second, m_nearest.min_distance };
+    }
+
     [[ nodiscard ]] std::ptrdiff_t nearest_idx ( const key_type & point_ ) const noexcept {
         return nearest_ptr ( point_ ) - m_data.data ( );
     }
