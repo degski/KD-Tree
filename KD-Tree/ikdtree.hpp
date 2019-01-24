@@ -602,7 +602,12 @@ struct TreeMap2D {
     template<typename Stream>
     [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const TreeMap2D & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
-            out_ << '<' << p.first << ' ' << p.second << '>';
+            if constexpr ( 8u == sizeof ( mapped_type ) ) {
+                out_ << '<' << p.first << ' ' << static_cast<int> ( p.second ) << '>';
+            }
+            else {
+                out_ << '<' << p.first << ' ' << p.second << '>';
+            }
         }
         return out_;
     }
