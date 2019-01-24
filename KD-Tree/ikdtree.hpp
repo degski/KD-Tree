@@ -502,7 +502,7 @@ struct TreeMap2D {
     TreeMap2D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), std::pair<key_type, mapped_type> { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
+                m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
@@ -523,23 +523,7 @@ struct TreeMap2D {
 
     template<typename forward_it>
     TreeMap2D ( forward_it first_, forward_it last_ ) noexcept {
-        if ( first_ < last_ ) {
-            const std::size_t n = std::distance ( first_, last_ );
-            if ( n > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), std::pair<key_type, mapped_type> { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
-                m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
-                m_dim = get_dimensions_order ( first_, last_ );
-                switch ( m_dim ) {
-                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); break;
-                case 1: kd_construct_yx ( m_data.data ( ), first_, last_ ); break;
-                }
-            }
-            else {
-                m_data.reserve ( n );
-                std::copy ( first_, last_, std::back_inserter ( m_data ) );
-                m_dim = 2u;
-            }
-        }
+        initialize ( first_, last_ );
     }
 
     TreeMap2D & operator = ( const TreeMap2D & ) = delete;
@@ -556,7 +540,7 @@ struct TreeMap2D {
             if ( first_ < last_ ) {
                 const std::size_t n = std::distance ( first_, last_ );
                 if ( n > m_linear_bound ) {
-                    m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( n ) ), std::pair<key_type, mapped_type> { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
+                    m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
                     m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                     m_dim = get_dimensions_order ( first_, last_ );
                     switch ( m_dim ) {
@@ -919,7 +903,7 @@ struct Tree3D {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
                 case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_xy; break;
