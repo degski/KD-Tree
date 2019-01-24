@@ -101,6 +101,11 @@ public:
         return m_data.emplace ( it_, std::forward<Args&&> ( args_ )... );
     }
 
+    template<typename ... Args>
+    [[ maybe_unused ]] iterator emplace_back ( Args && ... args_ ) noexcept {
+        return m_data.emplace_back ( std::forward<Args&&> ( args_ ) ... );
+    }
+
     // IMPORTANT: Changes the value, i.e. the key, if this does not respect the sort-order,
     // the set will no longer be sorted (the part of the key used for sorting should be
     // equal to the value of that part of the key of the update).
@@ -274,6 +279,11 @@ class sorted_vector_multiset {
     template<typename ... Args>
     [[ maybe_unused ]] iterator emplace ( const_iterator it_, Args && ... args_ ) noexcept {
         return m_data.emplace ( it_, std::forward<Args&&> ( args_ )... );
+    }
+
+    template<typename ... Args>
+    [[ maybe_unused ]] iterator emplace_back ( Args && ... args_ ) noexcept {
+        return m_data.emplace_back ( std::forward<Args&&> ( args_ ) ... );
     }
 
     // IMPORTANT: Changes the value, i.e. the key, if this does not respect the sort-order,
