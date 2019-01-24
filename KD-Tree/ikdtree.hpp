@@ -370,16 +370,15 @@ struct TreeMap2D {
     using mapped_type = M;
 
     using value_type = std::pair<K, M>;
-    using pointer = key_type *;
-    using reference = key_type &;
-    using const_pointer = key_type const *;
-    using const_reference = key_type const &;
+    using pointer = value_type *;
+    using reference = value_type &;
+    using const_pointer = value_type const *;
+    using const_reference = value_type const &;
 
-    using key_container = std::vector<key_type>;
-    using mapped_container = std::vector<mapped_type>;
+    using container = std::vector<value_type>;
 
-    using iterator = typename key_container::iterator;
-    using const_iterator = typename key_container::const_iterator;
+    using iterator = typename container::iterator;
+    using const_iterator = typename container::const_iterator;
 
     private:
 
@@ -390,7 +389,7 @@ struct TreeMap2D {
     };
 
     template<typename forward_it>
-    [ [ nodiscard ] ] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
+    [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
         const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.first.x < b.first.x; } );
         const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.first.y < b.first.y; } );
         return ( x.second->first.x - x.first->first.x ) < ( y.second->first.y - y.first->first.y );
@@ -410,15 +409,14 @@ struct TreeMap2D {
     }
 
     [[ nodiscard ]] bool is_leaf ( const const_pointer p_ ) const noexcept {
-        return ( m_leaf_start < p_ ) or ( std::numeric_limits<base_type>::max ( ) == left ( p_ )->x );
+        return ( m_leaf_start < p_ ) or ( std::numeric_limits<base_type>::max ( ) == left ( p_ )->first.x );
     }
 
     template<typename random_it>
     void kd_construct_xy ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.first.x < b.first.x; } );
-        *p_ = ( *median ).first;
-        p_ [ m_offset ] = ( *median ).second;
+        *p_ = *median;
         if ( first_ != median ) {
             kd_construct_yx ( left ( p_ ), first_, median );
             if ( ++median != last_ )
@@ -429,8 +427,7 @@ struct TreeMap2D {
     void kd_construct_yx ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.first.y < b.first.y; } );
-        *p_ = ( *median ).first;
-        p_ [ m_offset ] = ( *median ).second;
+        *p_ = *median;
         if ( first_ != median ) {
             kd_construct_xy ( left ( p_ ), first_, median );
             if ( ++median != last_ )
@@ -439,13 +436,13 @@ struct TreeMap2D {
     }
 
     void nn_search_xy ( const const_pointer p_ ) const noexcept {
-        base_type d = TreeMap2D::distance_squared ( *p_, m_nearest.point );
+        base_type d = TreeMap2D::distance_squared ( ( *p_ ).first, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->x - m_nearest.point.x ) > base_type { 0 } ) {
+        if ( ( d = p_->first.x - m_nearest.point.x ) > base_type { 0 } ) {
             nn_search_yx ( left ( p_ ) );
             if ( ( ( d * d ) < m_nearest.min_distance ) )
                 nn_search_yx ( right ( p_ ) );
@@ -457,13 +454,13 @@ struct TreeMap2D {
         }
     }
     void nn_search_yx ( const const_pointer p_ ) const noexcept {
-        base_type d = TreeMap2D::distance_squared ( *p_, m_nearest.point );
+        base_type d = TreeMap2D::distance_squared ( ( *p_ ).first, m_nearest.point );
         if ( d < m_nearest.min_distance ) {
             m_nearest.min_distance = d; m_nearest.found = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
+        if ( ( d = p_->first.y - m_nearest.point.y ) > base_type { 0 } ) {
             nn_search_xy ( left ( p_ ) );
             if ( ( ( d * d ) < m_nearest.min_distance ) )
                 nn_search_xy ( right ( p_ ) );
@@ -477,7 +474,7 @@ struct TreeMap2D {
 
     void nn_search_linear ( ) const noexcept {
         for ( auto && v : m_data ) {
-            const base_type d = distance_squared ( m_nearest.point, v );
+            const base_type d = distance_squared ( m_nearest.point, v.first );
             if ( d < m_nearest.min_distance ) {
                 m_nearest.found = &v;
                 m_nearest.min_distance = d;
@@ -485,10 +482,8 @@ struct TreeMap2D {
         }
     }
 
-    key_container m_data;
-    mapped_container m_mapped;
+    container m_data;
     const_pointer m_leaf_start;
-    std::ptrdiff_t m_offset;
     std::size_t m_dim;
     mutable nearest_data m_nearest;
 
@@ -499,21 +494,17 @@ struct TreeMap2D {
     TreeMap2D ( const TreeMap2D & ) = delete;
     TreeMap2D ( TreeMap2D && rhs_ ) noexcept :
         m_data { std::move ( rhs_.m_data ) },
-        m_mapped { std::move ( rhs_.m_mapped ) },
         m_leaf_start { rhs_.m_leaf_start },
-        m_offset { rhs_.m_offset },
         m_dim { rhs_.mdim } {
     }
 
     TreeMap2D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
-                m_mapped.resize ( m_data.size ( ) );
+                m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), std::pair<key_type, mapped_type> { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
-                m_offset = m_mapped.data ( ) - m_data.data ( );
                 m_dim = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
-                std::vector<value_type> points;
+                container points;
                 points.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
                 switch ( m_dim ) {
@@ -534,10 +525,8 @@ struct TreeMap2D {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( n ) ), key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
-                m_mapped.resize ( m_data.size ( ) );
+                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), std::pair<key_type, mapped_type> { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
-                m_offset = m_mapped.data ( ) - m_data.data ( );
                 m_dim = get_dimensions_order ( first_, last_ );
                 switch ( m_dim ) {
                 case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); break;
@@ -555,14 +544,12 @@ struct TreeMap2D {
     TreeMap2D & operator = ( const TreeMap2D & ) = delete;
     TreeMap2D & operator = ( TreeMap2D && rhs_ ) noexcept {
         m_data = std::move ( rhs_.m_data );
-        m_mapped = std::move ( rhs_.m_mapped );
         m_leaf_start = rhs_.m_leaf_start;
-        m_offset = rhs_.m_offset;
         m_dim = rhs_.m_dim;
         return *this;
     }
 
-    [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
+    [[ nodiscard ]] const_pointer nearest_ptr ( const key_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         switch ( m_dim ) {
         case 0: nn_search_xy ( m_data.data ( ) ); break;
@@ -572,22 +559,26 @@ struct TreeMap2D {
         return m_nearest.found;
     }
 
-    [[ nodiscard ]] std::ptrdiff_t nearest_idx ( const value_type & point_ ) const noexcept {
+    [[ nodiscard ]] std::ptrdiff_t nearest_idx ( const key_type & point_ ) const noexcept {
         return nearest_ptr ( point_ ) - m_data.data ( );
     }
 
-    [[ nodiscard ]] value_type nearest_pnt ( const value_type & point_ ) const noexcept {
+    [[ nodiscard ]] value_type nearest_pnt ( const key_type & point_ ) const noexcept {
         return *nearest_ptr ( point_ );
     }
 
-    [[ nodiscard ]] static constexpr base_type distance_squared ( const value_type & p1_, const value_type & p2_ ) noexcept {
+    [[ nodiscard ]] mapped_type nearest_val ( const key_type & point_ ) const noexcept {
+        return nearest_ptr ( point_ )->second;
+    }
+
+    [[ nodiscard ]] static constexpr base_type distance_squared ( const key_type & p1_, const key_type & p2_ ) noexcept {
         return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
     }
 
     template<typename Stream>
-    [ [ maybe_unused ] ] friend Stream & operator << ( Stream & out_, const TreeMap2D & tree_ ) noexcept {
+    [[ maybe_unused ]] friend Stream & operator << ( Stream & out_, const TreeMap2D & tree_ ) noexcept {
         for ( const auto & p : tree_.m_data ) {
-            out_ << p;
+            out_ << '<' << p.first << ' ' << p.second << '>';
         }
         return out_;
     }
@@ -595,7 +586,7 @@ struct TreeMap2D {
     private:
 
     template<typename U>
-    [ [ nodiscard ] ] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         if ( i_ > m_linear_bound ) {
             U p = 1;

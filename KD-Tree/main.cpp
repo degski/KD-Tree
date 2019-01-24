@@ -62,25 +62,27 @@ namespace fs = std::filesystem;
 
 int wmain ( ) {
 
-    std::vector<kd::Point2f> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    std::vector<std::pair<kd::Point2f, int>> points { { { 1, 3 }, 0 }, { { 1, 8 }, 1 }, { { 2, 2 }, 2 }, { { 2, 10 }, 3 }, { { 3, 6 }, 4 }, { { 4, 1 }, 5 }, { { 5, 4 }, 6 }, { { 6, 8 }, 7 }, { { 7, 4 }, 8 }, { { 7, 7 }, 9 }, { { 8, 2 }, 10 }, { { 8, 5 }, 11 }, { { 9, 9 }, 12 } };
 
     for ( auto p : points ) {
-        std::cout << p;
+        std::cout << p.second;
     }
     std::cout << nl;
 
-    kd::Tree2D<float> tree { std::begin ( points ), std::end ( points ) };
+    kd::TreeMap2D<float, kd::Point2f, int> tree { std::begin ( points ), std::end ( points ) };
 
     std::cout << nl << tree << nl << nl;
 
     kd::Point2f ptf { 7.6f, 7.9f };
 
-    std::cout << nl << nl << "nearest " << nl << tree.nearest_pnt ( ptf ) << nl;
+    auto nn = tree.nearest_pnt ( ptf );
+
+    std::cout << nl << nl << "nearest " << nl << nn.first << ' ' << nn.second << nl;
 
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << kd::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << kd::TreeMap2D<float, kd::Point2f, int>::distance_squared ( p.first, ptf ) << ' ' << p.first << nl;
     }
 
     return EXIT_SUCCESS;
