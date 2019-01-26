@@ -264,7 +264,7 @@ struct Tree2D {
     Tree2D ( Tree2D && rhs_ ) noexcept :
         m_data { std::move ( rhs_.m_data ) },
         m_leaf_start { rhs_.m_leaf_start },
-        m_dim { rhs_.mdim } {
+        m_dim { rhs_.m_dim } {
     }
 
     Tree2D ( std::initializer_list<value_type> il_ ) noexcept {
