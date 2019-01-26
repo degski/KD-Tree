@@ -145,8 +145,11 @@ struct Tree2D {
     using const_iterator = typename container::const_iterator;
 
     struct nearest_data {
+        // The point to which we are searching the closest neighbour.
         value_type to;
+        // Pointer to the closest point.
         const_pointer point;
+        // Distance squared.
         base_type distance;
     };
 
@@ -256,6 +259,7 @@ struct Tree2D {
 
     mutable nearest_data nearest;
 
+    Tree2D ( ) noexcept { }
     Tree2D ( const Tree2D & ) = delete;
     Tree2D ( Tree2D && rhs_ ) noexcept :
         m_data { std::move ( rhs_.m_data ) },
@@ -266,7 +270,7 @@ struct Tree2D {
     Tree2D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
@@ -313,6 +317,13 @@ struct Tree2D {
         return it_->x == std::numeric_limits<base_type>::max ( );
     }
 
+    [[ nodiscard ]] static bool is_valid ( const_reference value_type_ ) noexcept {
+        return value_type_.x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] static bool is_not_valid ( const_reference value_type_ ) noexcept {
+        return value_type_.x == std::numeric_limits<base_type>::max ( );
+    }
+
     Tree2D & operator = ( const Tree2D & ) = delete;
     Tree2D & operator = ( Tree2D && rhs_ ) noexcept {
         m_data = std::move ( rhs_.m_data );
@@ -331,7 +342,7 @@ struct Tree2D {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( first_, last_ );
                 switch ( m_dim ) {
@@ -377,10 +388,8 @@ struct Tree2D {
         return out_;
     }
 
-    private:
-
     template<typename U>
-    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [[ nodiscard ]] static constexpr U capacity ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         if ( i_ > m_linear_bound ) {
             U p = 1;
@@ -415,8 +424,11 @@ struct TreeMap2D {
     using const_iterator = typename container::const_iterator;
 
     struct nearest_data {
+        // The point to which we are searching the closest neighbour.
         key_type to;
+        // Pointer to the closest point.
         const_pointer point;
+        // Distance squared.
         base_type distance;
     };
 
@@ -526,7 +538,7 @@ struct TreeMap2D {
 
     mutable nearest_data nearest;
 
-    TreeMap2D ( ) { }
+    TreeMap2D ( ) noexcept { }
     TreeMap2D ( const TreeMap2D & ) = delete;
     TreeMap2D ( TreeMap2D && rhs_ ) noexcept :
         m_data { std::move ( rhs_.m_data ) },
@@ -537,7 +549,7 @@ struct TreeMap2D {
     TreeMap2D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
+                m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
@@ -584,6 +596,13 @@ struct TreeMap2D {
         return it_->first.x == std::numeric_limits<base_type>::max ( );
     }
 
+    [[ nodiscard ]] static bool is_valid ( const_reference value_type_ ) noexcept {
+        return value_type_.first.x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] static bool is_not_valid ( const_reference value_type_ ) noexcept {
+        return value_type_.first.x == std::numeric_limits<base_type>::max ( );
+    }
+
     TreeMap2D & operator = ( const TreeMap2D & ) = delete;
     TreeMap2D & operator = ( TreeMap2D && rhs_ ) noexcept {
         m_data = std::move ( rhs_.m_data );
@@ -603,7 +622,7 @@ struct TreeMap2D {
             if ( first_ < last_ ) {
                 const std::size_t n = std::distance ( first_, last_ );
                 if ( n > m_linear_bound ) {
-                    m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
+                    m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { key_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) }, mapped_type { } } );
                     m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                     m_dim = get_dimensions_order ( first_, last_ );
                     switch ( m_dim ) {
@@ -659,10 +678,8 @@ struct TreeMap2D {
         return out_;
     }
 
-    private:
-
     template<typename U>
-    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [[ nodiscard ]] static constexpr U capacity ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         if ( i_ > m_linear_bound ) {
             U p = 1;
@@ -695,8 +712,11 @@ struct Tree3D {
     using const_iterator = typename container::const_iterator;
 
     struct nearest_data {
+        // The point to which we are searching the closest neighbour.
         value_type to;
+        // Pointer to the closest point.
         const_pointer point;
+        // Distance squared.
         base_type distance;
     };
 
@@ -934,13 +954,14 @@ struct Tree3D {
 
     mutable nearest_data nearest;
 
+    Tree3D ( ) noexcept { }
     Tree3D ( const Tree3D & ) = delete;
     Tree3D ( Tree3D && ) noexcept = delete;
 
     Tree3D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 container points;
                 points.reserve ( il_.size ( ) );
@@ -990,6 +1011,13 @@ struct Tree3D {
         return it_->x == std::numeric_limits<base_type>::max ( );
     }
 
+    [[ nodiscard ]] static bool is_valid ( const_reference value_type_ ) noexcept {
+        return value_type_.x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] static bool is_not_valid ( const_reference value_type_ ) noexcept {
+        return value_type_.x == std::numeric_limits<base_type>::max ( );
+    }
+
     Tree3D & operator = ( const Tree3D & ) = delete;
     Tree3D & operator = ( Tree3D && ) noexcept = delete;
 
@@ -1003,7 +1031,7 @@ struct Tree3D {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
-                m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
                 case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = &Tree3D::nn_search_xy; break;
@@ -1048,10 +1076,8 @@ struct Tree3D {
         return out_;
     }
 
-    private:
-
     template<typename U>
-    [[ nodiscard ]] static constexpr U bin_tree_size ( const U i_ ) noexcept {
+    [[ nodiscard ]] static constexpr U capacity ( const U i_ ) noexcept {
         assert ( i_ > 0 );
         if ( i_ > m_linear_bound ) {
             U p = 1;
