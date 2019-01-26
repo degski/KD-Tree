@@ -300,6 +300,19 @@ struct Tree2D {
 
     [[ nodiscard ]] const_reference root ( ) const noexcept { return m_data.front ( ); }
 
+    [[ nodiscard ]] bool is_valid ( iterator it_ ) noexcept {
+        return it_->x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_valid ( const_iterator it_ ) const noexcept {
+        return it_->x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_not_valid ( iterator it_ ) noexcept {
+        return it_->x == std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_not_valid ( const_iterator it_ ) const noexcept {
+        return it_->x == std::numeric_limits<base_type>::max ( );
+    }
+
     Tree2D & operator = ( const Tree2D & ) = delete;
     Tree2D & operator = ( Tree2D && rhs_ ) noexcept {
         m_data = std::move ( rhs_.m_data );
@@ -557,6 +570,19 @@ struct TreeMap2D {
     [[ nodiscard ]] const_iterator cend ( ) const noexcept { return m_data.cend ( ); }
 
     [[ nodiscard ]] const_reference root ( ) const noexcept { return m_data.front ( ); }
+
+    [[ nodiscard ]] bool is_valid ( iterator it_ ) noexcept {
+        return it_->first.x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_valid ( const_iterator it_ ) const noexcept {
+        return it_->first.x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_not_valid ( iterator it_ ) noexcept {
+        return it_->first.x == std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_not_valid ( const_iterator it_ ) const noexcept {
+        return it_->first.x == std::numeric_limits<base_type>::max ( );
+    }
 
     TreeMap2D & operator = ( const TreeMap2D & ) = delete;
     TreeMap2D & operator = ( TreeMap2D && rhs_ ) noexcept {
@@ -950,6 +976,19 @@ struct Tree3D {
     [[ nodiscard ]] const_iterator cend ( ) const noexcept { return m_data.cend ( ); }
 
     [[ nodiscard ]] const_reference root ( ) const noexcept { return m_data.front ( ); }
+
+    [[ nodiscard ]] bool is_valid ( iterator it_ ) noexcept {
+        return it_->x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_valid ( const_iterator it_ ) const noexcept {
+        return it_->x != std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_not_valid ( iterator it_ ) noexcept {
+        return it_->x == std::numeric_limits<base_type>::max ( );
+    }
+    [[ nodiscard ]] bool is_not_valid ( const_iterator it_ ) const noexcept {
+        return it_->x == std::numeric_limits<base_type>::max ( );
+    }
 
     Tree3D & operator = ( const Tree3D & ) = delete;
     Tree3D & operator = ( Tree3D && ) noexcept = delete;
