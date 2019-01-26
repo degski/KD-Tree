@@ -144,13 +144,13 @@ struct Tree2D {
     using iterator = typename container::iterator;
     using const_iterator = typename container::const_iterator;
 
-    private:
-
     struct nearest_data {
-        value_type point;
-        const_pointer found;
-        base_type min_distance;
+        value_type to;
+        const_pointer point;
+        base_type distance;
     };
+
+    private:
 
     template<typename forward_it>
     [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
@@ -200,48 +200,48 @@ struct Tree2D {
     }
 
     void nn_search_xy ( const const_pointer p_ ) const noexcept {
-        base_type d = Tree2D::distance_squared ( *p_, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = Tree2D::distance_squared ( *p_, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->x - m_nearest.point.x ) > base_type { 0 } ) {
+        if ( ( d = p_->x - nearest.to.x ) > base_type { 0 } ) {
             nn_search_yx ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_yx ( right ( p_ ) );
         }
         else {
             nn_search_yx ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_yx ( left ( p_ ) );
         }
     }
     void nn_search_yx ( const const_pointer p_ ) const noexcept {
-        base_type d = Tree2D::distance_squared ( *p_, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = Tree2D::distance_squared ( *p_, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
+        if ( ( d = p_->y - nearest.to.y ) > base_type { 0 } ) {
             nn_search_xy ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_xy ( right ( p_ ) );
         }
         else {
             nn_search_xy ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_xy ( left ( p_ ) );
         }
     }
 
     void nn_search_linear ( ) const noexcept {
         for ( auto && v : m_data ) {
-            const base_type d = distance_squared ( m_nearest.point, v );
-            if ( d < m_nearest.min_distance ) {
-                m_nearest.found = &v;
-                m_nearest.min_distance = d;
+            const base_type d = distance_squared ( nearest.to, v );
+            if ( d < nearest.distance ) {
+                nearest.point = &v;
+                nearest.distance = d;
             }
         }
     }
@@ -249,11 +249,12 @@ struct Tree2D {
     container m_data;
     const_pointer m_leaf_start;
     std::size_t m_dim;
-    mutable nearest_data m_nearest;
 
     static constexpr std::size_t m_linear_bound = 44u;
 
     public:
+
+    mutable nearest_data nearest;
 
     Tree2D ( const Tree2D & ) = delete;
     Tree2D ( Tree2D && rhs_ ) noexcept :
@@ -286,6 +287,34 @@ struct Tree2D {
 
     template<typename forward_it>
     Tree2D ( forward_it first_, forward_it last_ ) noexcept {
+        initialize ( first_, last_ );
+    }
+
+    [[ nodiscard ]] iterator begin ( ) noexcept { return m_data.begin ( ); }
+    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return m_data.cbegin ( ); }
+    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return m_data.cbegin ( ); }
+
+    [[ nodiscard ]] iterator end ( ) noexcept { return m_data.end ( ); }
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return m_data.cend ( ); }
+    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return m_data.cend ( ); }
+
+    [[ nodiscard ]] const_reference root ( ) const noexcept { return m_data.front ( ); }
+
+    Tree2D & operator = ( const Tree2D & ) = delete;
+    Tree2D & operator = ( Tree2D && rhs_ ) noexcept {
+        m_data = std::move ( rhs_.m_data );
+        m_leaf_start = rhs_.m_leaf_start;
+        m_dim = rhs_.m_dim;
+        return * this;
+    }
+
+    template<typename size_type>
+    [[ nodiscard ]] reference operator [ ] ( const size_type i_ ) noexcept { return m_data [ i_ ]; }
+    template<typename size_type>
+    [[ nodiscard ]] const_reference operator [ ] ( const size_type i_ ) const noexcept { return m_data [ i_ ]; }
+
+    template<typename forward_it>
+    void initialize ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
@@ -305,22 +334,14 @@ struct Tree2D {
         }
     }
 
-    Tree2D & operator = ( const Tree2D & ) = delete;
-    Tree2D & operator = ( Tree2D && rhs_ ) noexcept {
-        m_data = std::move ( rhs_.m_data );
-        m_leaf_start = rhs_.m_leaf_start;
-        m_dim = rhs_.m_dim;
-        return * this;
-    }
-
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
-        m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
+        nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         switch ( m_dim ) {
         case 0: nn_search_xy ( m_data.data ( ) ); break;
         case 1: nn_search_yx ( m_data.data ( ) ); break;
         case 2: nn_search_linear ( ); break;
         }
-        return m_nearest.found;
+        return nearest.point;
     }
 
     [[ nodiscard ]] std::ptrdiff_t nearest_idx ( const value_type & point_ ) const noexcept {
@@ -380,13 +401,13 @@ struct TreeMap2D {
     using iterator = typename container::iterator;
     using const_iterator = typename container::const_iterator;
 
-    private:
-
     struct nearest_data {
-        key_type point;
-        const_pointer found;
-        base_type min_distance;
+        key_type to;
+        const_pointer point;
+        base_type distance;
     };
+
+    private:
 
     template<typename forward_it>
     [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
@@ -436,48 +457,48 @@ struct TreeMap2D {
     }
 
     void nn_search_xy ( const const_pointer p_ ) const noexcept {
-        base_type d = TreeMap2D::distance_squared ( ( *p_ ).first, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = TreeMap2D::distance_squared ( ( *p_ ).first, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->first.x - m_nearest.point.x ) > base_type { 0 } ) {
+        if ( ( d = p_->first.x - nearest.to.x ) > base_type { 0 } ) {
             nn_search_yx ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_yx ( right ( p_ ) );
         }
         else {
             nn_search_yx ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_yx ( left ( p_ ) );
         }
     }
     void nn_search_yx ( const const_pointer p_ ) const noexcept {
-        base_type d = TreeMap2D::distance_squared ( ( *p_ ).first, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = TreeMap2D::distance_squared ( ( *p_ ).first, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->first.y - m_nearest.point.y ) > base_type { 0 } ) {
+        if ( ( d = p_->first.y - nearest.to.y ) > base_type { 0 } ) {
             nn_search_xy ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_xy ( right ( p_ ) );
         }
         else {
             nn_search_xy ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_xy ( left ( p_ ) );
         }
     }
 
     void nn_search_linear ( ) const noexcept {
         for ( auto && v : m_data ) {
-            const base_type d = distance_squared ( m_nearest.point, v.first );
-            if ( d < m_nearest.min_distance ) {
-                m_nearest.found = &v;
-                m_nearest.min_distance = d;
+            const base_type d = distance_squared ( nearest.to, v.first );
+            if ( d < nearest.distance ) {
+                nearest.point = &v;
+                nearest.distance = d;
             }
         }
     }
@@ -485,18 +506,19 @@ struct TreeMap2D {
     container m_data;
     const_pointer m_leaf_start;
     std::size_t m_dim;
-    mutable nearest_data m_nearest;
 
     static constexpr std::size_t m_linear_bound = 1u;
 
     public:
+
+    mutable nearest_data nearest;
 
     TreeMap2D ( ) { }
     TreeMap2D ( const TreeMap2D & ) = delete;
     TreeMap2D ( TreeMap2D && rhs_ ) noexcept :
         m_data { std::move ( rhs_.m_data ) },
         m_leaf_start { rhs_.m_leaf_start },
-        m_dim { rhs_.mdim } {
+        m_dim { rhs_.m_dim } {
     }
 
     TreeMap2D ( std::initializer_list<value_type> il_ ) noexcept {
@@ -526,6 +548,16 @@ struct TreeMap2D {
         initialize ( first_, last_ );
     }
 
+    [[ nodiscard ]] iterator begin ( ) noexcept { return m_data.begin ( ); }
+    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return m_data.cbegin ( ); }
+    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return m_data.cbegin ( ); }
+
+    [[ nodiscard ]] iterator end ( ) noexcept { return m_data.end ( ); }
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return m_data.cend ( ); }
+    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return m_data.cend ( ); }
+
+    [[ nodiscard ]] const_reference root ( ) const noexcept { return m_data.front ( ); }
+
     TreeMap2D & operator = ( const TreeMap2D & ) = delete;
     TreeMap2D & operator = ( TreeMap2D && rhs_ ) noexcept {
         m_data = std::move ( rhs_.m_data );
@@ -533,6 +565,11 @@ struct TreeMap2D {
         m_dim = rhs_.m_dim;
         return *this;
     }
+
+    template<typename size_type>
+    [[ nodiscard ]] reference operator [ ] ( const size_type i_ ) noexcept { return m_data [ i_ ]; }
+    template<typename size_type>
+    [[ nodiscard ]] const_reference operator [ ] ( const size_type i_ ) const noexcept { return m_data [ i_ ]; }
 
     template<typename forward_it>
     void initialize ( forward_it first_, forward_it last_ ) noexcept {
@@ -558,21 +595,13 @@ struct TreeMap2D {
     }
 
     [[ nodiscard ]] const_pointer nearest_ptr ( const key_type & point_ ) const noexcept {
-        m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
+        nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         switch ( m_dim ) {
         case 0: nn_search_xy ( m_data.data ( ) ); break;
         case 1: nn_search_yx ( m_data.data ( ) ); break;
         case 2: nn_search_linear ( ); break;
         }
-        return m_nearest.found;
-    }
-
-    [[ nodiscard ]] base_type nearest_distance ( ) const noexcept {
-        return m_nearest.min_distance;
-    }
-
-    [[ nodiscard ]] std::pair<mapped_type, base_type> nearest ( const key_type & point_ ) const noexcept {
-        return { nearest_ptr ( point_ )->second, m_nearest.min_distance };
+        return nearest.point;
     }
 
     [[ nodiscard ]] std::ptrdiff_t nearest_idx ( const key_type & point_ ) const noexcept {
@@ -639,13 +668,13 @@ struct Tree3D {
     using iterator = typename container::iterator;
     using const_iterator = typename container::const_iterator;
 
-    private:
-
     struct nearest_data {
-        value_type point;
-        const_pointer found;
-        base_type min_distance;
+        value_type to;
+        const_pointer point;
+        base_type distance;
     };
+
+    private:
 
     template<typename forward_it>
     [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
@@ -750,121 +779,121 @@ struct Tree3D {
     }
 
     void nn_search_xy ( const const_pointer p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->x - m_nearest.point.x ) > base_type { 0 } ) {
+        if ( ( d = p_->x - nearest.to.x ) > base_type { 0 } ) {
             nn_search_yz ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_yz ( right ( p_ ) );
         }
         else {
             nn_search_yz ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_yz ( left ( p_ ) );
         }
     }
     void nn_search_yz ( const const_pointer p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
+        if ( ( d = p_->y - nearest.to.y ) > base_type { 0 } ) {
             nn_search_zx ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_zx ( right ( p_ ) );
         }
         else {
             nn_search_zx ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_zx ( left ( p_ ) );
         }
     }
     void nn_search_zx ( const const_pointer p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->z - m_nearest.point.z ) > base_type { 0 } ) {
+        if ( ( d = p_->z - nearest.to.z ) > base_type { 0 } ) {
             nn_search_xy ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_xy ( right ( p_ ) );
         }
         else {
             nn_search_xy ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_xy ( left ( p_ ) );
         }
     }
 
     void nn_search_xz ( const const_pointer p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->x - m_nearest.point.x ) > base_type { 0 } ) {
+        if ( ( d = p_->x - nearest.to.x ) > base_type { 0 } ) {
             nn_search_zy ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_zy ( right ( p_ ) );
         }
         else {
             nn_search_zy ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_zy ( left ( p_ ) );
         }
     }
     void nn_search_yx ( const const_pointer p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->y - m_nearest.point.y ) > base_type { 0 } ) {
+        if ( ( d = p_->y - nearest.to.y ) > base_type { 0 } ) {
             nn_search_xz ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_xz ( right ( p_ ) );
         }
         else {
             nn_search_xz ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_xz ( left ( p_ ) );
         }
     }
     void nn_search_zy ( const const_pointer p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, m_nearest.point );
-        if ( d < m_nearest.min_distance ) {
-            m_nearest.min_distance = d; m_nearest.found = p_;
+        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
+        if ( d < nearest.distance ) {
+            nearest.distance = d; nearest.point = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->z - m_nearest.point.z ) > base_type { 0 } ) {
+        if ( ( d = p_->z - nearest.to.z ) > base_type { 0 } ) {
             nn_search_yx ( left ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_yx ( right ( p_ ) );
         }
         else {
             nn_search_yx ( right ( p_ ) );
-            if ( ( ( d * d ) < m_nearest.min_distance ) )
+            if ( ( ( d * d ) < nearest.distance ) )
                 nn_search_yx ( left ( p_ ) );
         }
     }
 
     void nn_search_linear ( const const_pointer ) const noexcept {
         for ( const auto & v : m_data ) {
-            const base_type d = distance_squared ( m_nearest.point, v );
-            if ( d < m_nearest.min_distance ) {
-                m_nearest.found = &v;
-                m_nearest.min_distance = d;
+            const base_type d = distance_squared ( nearest.to, v );
+            if ( d < nearest.distance ) {
+                nearest.point = &v;
+                nearest.distance = d;
             }
         }
     }
@@ -872,11 +901,12 @@ struct Tree3D {
     container m_data;
     const_pointer m_leaf_start;
     void ( Tree3D::*nn_search ) ( const const_pointer ) const noexcept;
-    mutable nearest_data m_nearest;
 
     static constexpr std::size_t m_linear_bound = 44u;
 
     public:
+
+    mutable nearest_data nearest;
 
     Tree3D ( const Tree3D & ) = delete;
     Tree3D ( Tree3D && ) noexcept = delete;
@@ -908,35 +938,55 @@ struct Tree3D {
 
     template<typename forward_it>
     Tree3D ( forward_it first_, forward_it last_ ) noexcept {
+        initialize ( first_, last_ );
+    }
+
+    [[ nodiscard ]] iterator begin ( ) noexcept { return m_data.begin ( ); }
+    [[ nodiscard ]] const_iterator begin ( ) const noexcept { return m_data.cbegin ( ); }
+    [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return m_data.cbegin ( ); }
+
+    [[ nodiscard ]] iterator end ( ) noexcept { return m_data.end ( ); }
+    [[ nodiscard ]] const_iterator end ( ) const noexcept { return m_data.cend ( ); }
+    [[ nodiscard ]] const_iterator cend ( ) const noexcept { return m_data.cend ( ); }
+
+    [[ nodiscard ]] const_reference root ( ) const noexcept { return m_data.front ( ); }
+
+    Tree3D & operator = ( const Tree3D & ) = delete;
+    Tree3D & operator = ( Tree3D && ) noexcept = delete;
+
+    template<typename size_type>
+    [[ nodiscard ]] reference operator [ ] ( const size_type i_ ) noexcept { return m_data [ i_ ]; }
+    template<typename size_type>
+    [[ nodiscard ]] const_reference operator [ ] ( const size_type i_ ) const noexcept { return m_data [ i_ ]; }
+
+    template<typename forward_it>
+    void initialize ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
-                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_xy; break;
-                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_yz; break;
-                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_zx; break;
-                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_xz; break;
-                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_yx; break;
-                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = & Tree3D::nn_search_zy; break;
+                case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); nn_search = &Tree3D::nn_search_xy; break;
+                case 1: kd_construct_yz ( m_data.data ( ), first_, last_ ); nn_search = &Tree3D::nn_search_yz; break;
+                case 2: kd_construct_zx ( m_data.data ( ), first_, last_ ); nn_search = &Tree3D::nn_search_zx; break;
+                case 3: kd_construct_xz ( m_data.data ( ), first_, last_ ); nn_search = &Tree3D::nn_search_xz; break;
+                case 4: kd_construct_yx ( m_data.data ( ), first_, last_ ); nn_search = &Tree3D::nn_search_yx; break;
+                case 5: kd_construct_zy ( m_data.data ( ), first_, last_ ); nn_search = &Tree3D::nn_search_zy; break;
                 }
             }
             else {
                 m_data.reserve ( n );
                 std::copy ( first_, last_, std::back_inserter ( m_data ) );
-                nn_search = & Tree3D::nn_search_linear;
+                nn_search = &Tree3D::nn_search_linear;
             }
         }
     }
 
-    Tree3D & operator = ( const Tree3D & ) = delete;
-    Tree3D & operator = ( Tree3D && ) noexcept = delete;
-
     [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
-        m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
+        nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         ( this->*nn_search ) ( m_data.data ( ) );
-        return m_nearest.found;
+        return nearest.point;
     }
 
     [[ nodiscard ]] std::ptrdiff_t nearest_idx ( const value_type & point_ ) const noexcept {
