@@ -388,6 +388,10 @@ struct Tree2D {
         return out_;
     }
 
+    [[ nodiscard ]] std::size_t capacity ( ) const noexcept {
+        return m_data.size ( );
+    }
+
     template<typename U>
     [[ nodiscard ]] static constexpr U capacity ( const U i_ ) noexcept {
         assert ( i_ > 0 );
@@ -784,6 +788,10 @@ struct Tree3D {
             out_ << p;
         }
         return out_;
+    }
+
+    [[ nodiscard ]] std::size_t capacity ( ) const noexcept {
+        return m_data.size ( );
     }
 
     template<typename U>
