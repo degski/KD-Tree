@@ -31,8 +31,48 @@
 #include <limits>
 #include <type_traits>
 
+#include <short_alloc.hpp>
+
 
 namespace kd {
+
+namespace detail {
+
+constexpr std::size_t linear_bound = 44u;
+
+// Integer LogN.
+template<int Base, typename T, typename sfinae = std::enable_if_t<std::conjunction_v<std::is_integral<T>, std::is_unsigned<T>>>>
+constexpr T iLog ( const T n_, const T p_ = T ( 0 ) ) noexcept {
+    return n_ < Base ? p_ : iLog<Base, T, sfinae> ( n_ / Base, p_ + 1 );
+}
+
+// Integer Log2.
+template<typename T, typename = std::enable_if_t<std::conjunction_v<std::is_integral<T>, std::is_unsigned<T>>>>
+constexpr T ilog2 ( const T n_ ) noexcept {
+    return iLog<2, T> ( n_ );
+}
+
+template<typename T, typename = std::enable_if_t<std::conjunction_v<std::is_integral<T>, std::is_unsigned<T>>>>
+constexpr T next_power_2 ( const T n_ ) noexcept {
+    return n_ > 2 ? T ( 1 ) << ( ilog2<T> ( n_ - 1 ) + 1 ) : n_;
+}
+
+
+template<std::size_t N>
+constexpr std::size_t array_size ( ) noexcept {
+    return N > detail::linear_bound ? detail::next_power_2 ( N ) - 1 : N;
+}
+
+
+template<std::size_t S>
+struct message { // needs fixing.
+
+    template<typename ... Args>
+    message ( Args ... ) {
+        static_assert ( not ( 2 == S or 3 == S ), "2 or 3 dimensions only" );
+    }
+};
+}
 
 template<typename T>
 struct Point2 {
@@ -128,18 +168,23 @@ using Point3f = Point3<float>;
 using Point3d = Point3<double>;
 
 
+struct vector { };
+struct array { };
+
+
 // Implicit KD full binary tree of dimension 2, P can be substituted by sf::Vector2<>.
-template<typename T, typename P = Point2<T>>
+template<typename T, typename P = Point2<T>, typename Type = vector, std::size_t N = 0>
 struct Tree2D {
 
     using value_type = P;
     using base_type = T;
-    using pointer = value_type *;
-    using reference = value_type &;
+    using pointer = value_type * ;
+    using reference = value_type & ;
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
 
-    using container = std::vector<value_type>;
+    using container_type = Type;
+    using container = std::conditional_t<std::is_same_v<container_type, array>, std::array<P, detail::array_size<N> ( )>, std::vector<P>>;
 
     using iterator = typename container::iterator;
     using const_iterator = typename container::const_iterator;
@@ -249,17 +294,18 @@ struct Tree2D {
         }
     }
 
+    // typename container::allocator_type::arena_type m_arena;
+
     container m_data;
     const_pointer m_leaf_start;
     std::size_t m_dim;
-
-    static constexpr std::size_t m_linear_bound = 44u;
 
     public:
 
     mutable nearest_data nearest;
 
-    Tree2D ( ) noexcept { }
+    Tree2D ( ) noexcept {
+    }
     Tree2D ( const Tree2D & ) = delete;
     Tree2D ( Tree2D && rhs_ ) noexcept :
         m_data { std::move ( rhs_.m_data ) },
@@ -269,8 +315,13 @@ struct Tree2D {
 
     Tree2D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
-            if ( il_.size ( ) > m_linear_bound ) {
-                m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+            if ( il_.size ( ) > detail::linear_bound ) {
+                if constexpr ( std::is_same_v<container_type, array> ) {
+                    std::fill ( std::begin ( m_data ), std::end ( m_data ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                }
+                else {
+                    m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                }
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
@@ -282,8 +333,13 @@ struct Tree2D {
                 }
             }
             else {
-                m_data.reserve ( il_.size ( ) );
-                std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
+                if constexpr ( std::is_same_v<container_type, array> ) {
+                    std::copy_n ( std::begin ( il_ ), il_.size ( ), std::begin ( m_data ) );
+                }
+                else {
+                    m_data.reserve ( il_.size ( ) );
+                    std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
+                }
                 m_dim = 2u;
             }
         }
@@ -341,8 +397,13 @@ struct Tree2D {
     void initialize ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
-            if ( n > m_linear_bound ) {
-                m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+            if ( n > detail::linear_bound ) {
+                if constexpr ( std::is_same_v<container_type, array> ) {
+                    std::fill ( std::begin ( m_data ), std::end ( m_data ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                }
+                else {
+                    m_data.resize ( capacity<std::size_t> ( static_cast< std::size_t > ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                }
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 m_dim = get_dimensions_order ( first_, last_ );
                 switch ( m_dim ) {
@@ -351,8 +412,13 @@ struct Tree2D {
                 }
             }
             else {
-                m_data.reserve ( n );
-                std::copy ( first_, last_, std::back_inserter ( m_data ) );
+                if constexpr ( std::is_same_v<container_type, array> ) {
+                    std::copy_n ( first_, std::distance ( first_, last_ ), std::begin ( m_data ) );
+                }
+                else {
+                    m_data.reserve ( n );
+                    std::copy ( first_, last_, std::back_inserter ( m_data ) );
+                }
                 m_dim = 2u;
             }
         }
@@ -397,22 +463,13 @@ struct Tree2D {
     template<typename U>
     [[ nodiscard ]] static constexpr U capacity ( const U i_ ) noexcept {
         assert ( i_ > 0 );
-        if ( i_ > m_linear_bound ) {
-            U p = 1;
-            while ( p < i_ ) {
-                p += p + 1;
-            }
-            return p;
-        }
-        else {
-            return i_;
-        }
+        return  i_ > detail::linear_bound ? detail::next_power_2 ( i_ ) - 1 : i_;
     }
 };
 
 
 // Implicit KD full binary tree of dimension 3, P can be substituted by sf::Vector3<>.
-template<typename T, typename P = Point3<T>>
+template<typename T, typename P = Point2<T>, typename C = std::vector<P>>
 struct Tree3D {
 
     using value_type = P;
@@ -422,7 +479,7 @@ struct Tree3D {
     using const_pointer = value_type const *;
     using const_reference = value_type const &;
 
-    using container = std::vector<value_type>;
+    using container = C;
 
     using iterator = typename container::iterator;
     using const_iterator = typename container::const_iterator;
@@ -664,8 +721,6 @@ struct Tree3D {
     const_pointer m_leaf_start;
     void ( Tree3D::*nn_search ) ( const const_pointer ) const noexcept;
 
-    static constexpr std::size_t m_linear_bound = 44u;
-
     public:
 
     mutable nearest_data nearest;
@@ -676,7 +731,7 @@ struct Tree3D {
 
     Tree3D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
-            if ( il_.size ( ) > m_linear_bound ) {
+            if ( il_.size ( ) > detail::linear_bound ) {
                 m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 container points;
@@ -746,7 +801,7 @@ struct Tree3D {
     void initialize ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
-            if ( n > m_linear_bound ) {
+            if ( n > detail::linear_bound ) {
                 m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ), value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
@@ -801,30 +856,10 @@ struct Tree3D {
     template<typename U>
     [[ nodiscard ]] static constexpr U capacity ( const U i_ ) noexcept {
         assert ( i_ > 0 );
-        if ( i_ > m_linear_bound ) {
-            U p = 1;
-            while ( p < i_ ) {
-                p += p + 1;
-            }
-            return p;
-        }
-        else {
-            return i_;
-        }
+        return  i_ > detail::linear_bound ? detail::next_power_2 ( i_ ) - 1 : i_;
     }
 };
 
-namespace detail {
-
-template<std::size_t S>
-struct message { // needs fixing.
-
-    template<typename ... Args>
-    message ( Args ... ) {
-        static_assert ( not ( 2 == S or 3 == S ), "2 or 3 dimensions only" );
-    }
-};
-}
 
 template<typename base_type, std::size_t S>
 using ikdtree = typename std::conditional<2 == S, Tree2D<base_type>, typename std::conditional<3 == S, Tree3D<base_type>, detail::message<S>>::type>::type;
