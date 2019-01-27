@@ -353,6 +353,16 @@ struct Tree2D {
         initialize ( first_, last_ );
     }
 
+    // Returns (constexpr) the size of the std::array, or the class template parameter N ( = 0).
+    [[ nodiscard ]] static constexpr std::size_t size ( ) noexcept {
+        if constexpr ( std::is_same_v<container_type, array> ) {
+            return detail::array_size<N> ( );
+        }
+        else {
+            return N;
+        }
+    }
+
     [[ nodiscard ]] iterator begin ( ) noexcept { return m_data.begin ( ); }
     [[ nodiscard ]] const_iterator begin ( ) const noexcept { return m_data.cbegin ( ); }
     [[ nodiscard ]] const_iterator cbegin ( ) const noexcept { return m_data.cbegin ( ); }
@@ -458,10 +468,6 @@ struct Tree2D {
             out_ << p;
         }
         return out_;
-    }
-
-    [[ nodiscard ]] std::size_t capacity ( ) const noexcept {
-        return m_data.size ( );
     }
 
     private:
