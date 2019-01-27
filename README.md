@@ -1,7 +1,9 @@
 
 # KD-Tree
 
-KD-Tree in 2 and 3 dimensions. The Tree is implicit, i.e. flat with no overhead. Uses either a std::array or a std::vector as container type. Falls back to linear search iff data is small. The size of the container is next ( N ^ 2 ) - 1, so on average there is 25% wasted space.
+A static KD-Tree in 2 and 3 dimensions. Insert and delete are not implemented and the Tree should simply be reconstructed, which is fairly fast. The Tree is implicit, i.e. flat with no overhead. Uses either a std::array or a std::vector as container type. Falls back to linear search iff data is small. The size of the container is next ( N ^ 2 ) - 1, so on average there is 25% wasted space.
+
+The implementation uses recursion for both construction and nn-search.
 
     namespace kd
 
