@@ -314,6 +314,9 @@ struct Tree2D {
     }
 
     Tree2D ( std::initializer_list<value_type> il_ ) noexcept {
+        if constexpr ( std::is_same_v<container_type, array> ) {
+            assert ( il_.size ( ) == N );
+        }
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > detail::linear_bound ) {
                 if constexpr ( std::is_same_v<container_type, array> ) {
@@ -395,6 +398,9 @@ struct Tree2D {
 
     template<typename forward_it>
     void initialize ( forward_it first_, forward_it last_ ) noexcept {
+        if constexpr ( std::is_same_v<container_type, array> ) {
+            assert ( std::distance ( first_, last_ ) == N );
+        }
         if ( first_ < last_ ) {
             const std::size_t n = std::distance ( first_, last_ );
             if ( n > detail::linear_bound ) {
