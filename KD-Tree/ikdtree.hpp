@@ -31,8 +31,6 @@
 #include <limits>
 #include <type_traits>
 
-#include <short_alloc.hpp>
-
 
 namespace kd {
 
