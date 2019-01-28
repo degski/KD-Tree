@@ -76,7 +76,7 @@ int wmain ( ) {
 
     kd::Point2f ptf { 7.6f, 7.9f };
 
-    std::cout << nl << nl << "nearest " << nl << tree.nearest_pnt ( ptf ) << nl;
+    std::cout << nl << nl << "nearest " << nl << tree.nn_pointer ( ptf ) << nl;
 
     std::cout << nl;
 
@@ -181,7 +181,7 @@ bool test ( const int n_ ) noexcept {
 
     for ( int i = 0; i < 100'000; ++i ) {
         const kd::Point2f ptf { disx ( rng ), disy ( rng ) };
-        rv = rv and ( tree.nearest_pnt ( ptf ) == nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) );
+        rv = rv and ( tree.nn_pointer ( ptf ) == nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) );
         if ( not ( rv ) ) {
             std::cout << "fail\n";
             exit ( 0 );
@@ -410,7 +410,7 @@ struct KDTree {
         kd_free ( ptree );
     }
 
-    [[ nodiscard ]] kd::Point2f nearest_pnt ( const kd::Point2f & pos_ ) const noexcept {
+    [[ nodiscard ]] kd::Point2f nn_pointer ( const kd::Point2f & pos_ ) const noexcept {
         kd::Point2f pos;
         struct kdres * res = kd_nearestf ( ptree, ( const float * ) & pos_ );
         kd_res_itemf ( res, ( float * ) & pos );
@@ -449,7 +449,7 @@ int wmain77897897 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -481,7 +481,7 @@ int wmain77897897 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -513,7 +513,7 @@ int wmain77897897 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -545,7 +545,7 @@ int wmain77897897 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -593,7 +593,7 @@ int main877989 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -625,7 +625,7 @@ int main877989 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -657,7 +657,7 @@ int main877989 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ), disz ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ), disz ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -689,7 +689,7 @@ int main877989 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ), disz ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ), disz ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -732,7 +732,7 @@ int wmain89879 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -763,7 +763,7 @@ int wmain89879 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -794,7 +794,7 @@ int wmain89879 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -825,7 +825,7 @@ int wmain89879 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -856,7 +856,7 @@ int wmain89879 ( ) {
         timer.start ( );
 
         for ( int i = 0; i < 1'000'000; ++i ) {
-            ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+            ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
         }
 
         std::cout << "elapsed search " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
@@ -1074,7 +1074,7 @@ struct Tree2D {
 
     private:
 
-    struct nearest_data {
+    struct nn_data {
         value_type point;
         const_pointer found;
         base_type min_distance;
@@ -1184,7 +1184,7 @@ struct Tree2D {
 
     tagged_container m_data;
     std::size_t m_dim;
-    mutable nearest_data m_nearest;
+    mutable nn_data m_nearest;
 
     static constexpr std::size_t m_linear_bound = 4u;
 
@@ -1237,7 +1237,7 @@ struct Tree2D {
     Tree2D & operator = ( const Tree2D & ) = delete;
     Tree2D & operator = ( Tree2D && ) noexcept = delete;
 
-    [[ nodiscard ]] const_pointer nearest_ptr ( const value_type & point_ ) const noexcept {
+    [[ nodiscard ]] const_pointer nn_ptr ( const value_type & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         switch ( m_dim ) {
         case 0: nn_search_xy ( m_data.data ( ) ); break;
@@ -1247,12 +1247,12 @@ struct Tree2D {
         return m_nearest.found;
     }
 
-    [[ nodiscard ]] std::ptrdiff_t nearest_idx ( const value_type & point_ ) const noexcept {
-        return nearest_ptr ( point_ ) - m_data.data ( );
+    [[ nodiscard ]] std::ptrdiff_t nn_idx ( const value_type & point_ ) const noexcept {
+        return nn_ptr ( point_ ) - m_data.data ( );
     }
 
-    [[ nodiscard ]] value_type nearest_pnt ( const value_type & point_ ) const noexcept {
-        auto [ x, y ] { *nearest_ptr ( point_ ) };
+    [[ nodiscard ]] value_type nn_pointer ( const value_type & point_ ) const noexcept {
+        auto [ x, y ] { *nn_ptr ( point_ ) };
         return { std::move ( x.value ), std::move ( y ) };
     }
 
@@ -1307,7 +1307,7 @@ bool test2 ( const int n_ ) noexcept {
 
     for ( int i = 0; i < 100'000; ++i ) {
         const Point2<float> ptf { disx ( rng ), disy ( rng ) };
-        auto p1 = tree.nearest_pnt ( ptf );
+        auto p1 = tree.nn_pointer ( ptf );
         auto p2 = nn_search_linear ( std::begin ( points ), std::end ( points ), ptf );
         std::cout << p1 << p2 << nl;
         rv = rv and ( p1 == p2 );
@@ -1343,7 +1343,7 @@ int wmain ( ) {
 
         Point2 ptf { 7.6f, 7.9f };
 
-        std::cout << nl << nl << "nearest " << nl << tree.nearest_pnt ( ptf ) << nl;
+        std::cout << nl << nl << "nearest " << nl << tree.nn_pointer ( ptf ) << nl;
     }
 
 
@@ -1394,7 +1394,7 @@ double time_a_search ( kd::Tree2D<float> & tree, int nsearch ) {
     timer.start ( );
 
     for ( int i = 0; i < nsearch; i++ ) {
-        ptf += tree.nearest_pnt ( { disx ( rng ), disy ( rng ) } );
+        ptf += tree.nn_pointer ( { disx ( rng ), disy ( rng ) } );
     }
 
     return timer.get_elapsed_us ( ) / 1'000'000.0;
