@@ -41,7 +41,7 @@ namespace detail {
 constexpr std::size_t linear_bound = 44u;
 
 
-template<typename IT> struct signed_double_width_integer { };
+template<typename> struct signed_double_width_integer { };
 template<> struct signed_double_width_integer<std::uint8_t > { using type = std::int16_t; };
 template<> struct signed_double_width_integer<std::uint16_t> { using type = std::int32_t; };
 template<> struct signed_double_width_integer<std::uint32_t> { using type = std::int64_t; };
@@ -50,6 +50,10 @@ template<> struct signed_double_width_integer<std::int8_t  > { using type = std:
 template<> struct signed_double_width_integer<std::int16_t > { using type = std::int32_t; };
 template<> struct signed_double_width_integer<std::int32_t > { using type = std::int64_t; };
 template<> struct signed_double_width_integer<std::int64_t > { using type = std::int64_t; }; // Inshallah.
+
+template<typename T> struct same_sized_int { using type = std::make_signed_t<T>; };
+template<> struct same_sized_int<float> { using type = std::int32_t; };
+template<> struct same_sized_int<double> { using type = std::int64_t; };
 
 
 // Integer LogN.
@@ -206,9 +210,9 @@ struct Tree2D {
 
     template<typename forward_it>
     [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
-        const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
-        const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
-        return ( x.second->x - x.first->x ) < ( y.second->y - y.first->y );
+        const auto [ min_x, max_x ] = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
+        const auto [ min_y, max_y ] = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
+        return ( max_x->x - min_x->x ) < ( max_y->y - min_y->y );
     }
 
     [[ nodiscard ]] pointer left ( const pointer p_ ) const noexcept {
@@ -300,7 +304,7 @@ struct Tree2D {
 
     container m_data;
     const_pointer m_leaf_start = nullptr;
-    mutable const_pointer m_point = nullptr;
+    mutable const_pointer m_point = nullptr; // Mutable types are class global result types.
     std::size_t m_dim;
     mutable value_type m_to;
     // Distance squared.
@@ -522,10 +526,10 @@ struct Tree3D {
 
     template<typename forward_it>
     [[ nodiscard ]] std::size_t get_dimensions_order ( forward_it first_, forward_it last_ ) const noexcept {
-        const std::pair x = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
-        const std::pair y = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
-        const std::pair z = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.z < b.z; } );
-        std::pair<base_type, std::int32_t> dx { x.second->x - x.first->x, 0 }, dy { y.second->y - y.first->y, 1 }, dz { z.second->z - z.first->z, 2 };
+        const auto [ min_x, max_x ] = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.x < b.x; } );
+        const auto [ min_y, max_y ] = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.y < b.y; } );
+        const auto [ min_z, max_z ] = std::minmax_element ( first_, last_, [ ] ( const auto & a, const auto & b ) { return a.z < b.z; } );
+        std::pair<base_type, detail::same_sized_int<base_type>> dx { max_x->x - min_x->x, 0 }, dy { max_y->y - min_y->y, 1 }, dz { max_z->z - min_z->z, 2 };
         // sort list of 3.
         if ( dx.first < dy.first )
             std::swap ( dx, dy );
