@@ -41,9 +41,9 @@ public:
 
     using reference = T&;
     using rv_reference = T&&;
-    using const_reference = const T&;
+    using const_reference = T const&;
     using pointer = T*;
-    using const_pointer = const T*;
+    using const_pointer = T const*;
     using size_type = std::size_t;
     using value_type = T;
     using container = Container;
@@ -51,12 +51,12 @@ public:
     using const_iterator = typename container::const_iterator;
 
     sorted_vector_set ( ) noexcept { }
-    sorted_vector_set ( const std::size_t s_ ) : m_data { s_ } { }
+    sorted_vector_set ( std::size_t const s_ ) : m_data { s_ } { }
     sorted_vector_set ( std::initializer_list<T> init_ ) : m_data { std::forward<std::initializer_list<T>> ( init_ ) } { }
-    sorted_vector_set ( const sorted_vector_set & svs_ ) : m_data { svs_.m_data } { }
+    sorted_vector_set ( sorted_vector_set const & svs_ ) : m_data { svs_.m_data } { }
     sorted_vector_set ( sorted_vector_set && svs_ ) noexcept : m_data { std::forward<container> ( svs_.m_data ) } { }
 
-    [[ maybe_unused ]] sorted_vector_set & operator = ( const sorted_vector_set & svs_ ) { m_data = svs_.m_data; return * this;  }
+    [[ maybe_unused ]] sorted_vector_set & operator = ( sorted_vector_set const & svs_ ) { m_data = svs_.m_data; return * this;  }
     [[ maybe_unused ]] sorted_vector_set & operator = ( sorted_vector_set && svs_ ) noexcept { m_data = std::move ( svs_.m_data ); return * this; }
 
     // Return iterator to an element with key equivalent to key. If no such
@@ -169,9 +169,9 @@ public:
 
     void pop ( ) noexcept { m_data.pop_back ( ); }
 
-    void reserve ( const size_type r_ ) { m_data.reserve ( r_ ); }
+    void reserve ( size_type const r_ ) { m_data.reserve ( r_ ); }
     void clear ( ) noexcept { m_data.clear ( ); }
-    void resize ( const size_type s_ ) { m_data.resize ( ); }
+    void resize ( size_type const s_ ) { m_data.resize ( ); }
 
     [[ nodiscard ]] size_type size ( ) const noexcept { return m_data.size ( ); }
     [[ nodiscard ]] size_type capacity ( ) const noexcept { return m_data.capacity ( ); }
@@ -179,12 +179,12 @@ public:
 
     // This non-const operator allows assignment to the key (i.e. the key itself is modified),
     // better make sure that the assignment does not change the sort order!!!
-    [[ nodiscard ]] reference operator [ ] ( const size_type i_ ) noexcept { return m_data [ i_ ]; }
-    [[ nodiscard ]] const_reference operator [ ] ( const size_type i_ ) const noexcept { return m_data [ i_ ]; }
-    [[ nodiscard ]] reference nth ( const size_type i_ ) noexcept { return m_data [ i_ ]; }
-    [[ nodiscard ]] const_reference nth ( const size_type i_ ) const noexcept { return m_data [ i_ ]; }
-    [[ nodiscard ]] reference at ( const size_type i_ ) noexcept { return m_data.at ( i_ ); }
-    [[ nodiscard ]] const_reference at ( const size_type i_ ) const noexcept { return m_data.at ( i_ ); }
+    [[ nodiscard ]] reference operator [ ] ( size_type const i_ ) noexcept { return m_data [ i_ ]; }
+    [[ nodiscard ]] const_reference operator [ ] ( size_type const i_ ) const noexcept { return m_data [ i_ ]; }
+    [[ nodiscard ]] reference nth ( size_type const i_ ) noexcept { return m_data [ i_ ]; }
+    [[ nodiscard ]] const_reference nth ( size_type const i_ ) const noexcept { return m_data [ i_ ]; }
+    [[ nodiscard ]] reference at ( size_type const i_ ) noexcept { return m_data.at ( i_ ); }
+    [[ nodiscard ]] const_reference at ( size_type const i_ ) const noexcept { return m_data.at ( i_ ); }
 
     [[ nodiscard ]] iterator lower_bound ( const_reference t_ ) noexcept {
         return std::lower_bound ( std::begin ( m_data ), std::end ( m_data ), t_, Compare ( ) );
@@ -243,16 +243,16 @@ class sorted_vector_multiset {
     using const_iterator = typename container::const_iterator;
 
     sorted_vector_multiset ( ) noexcept { }
-    sorted_vector_multiset ( const std::size_t s_ ) : m_data { s_ } { }
+    sorted_vector_multiset ( std::size_t const s_ ) : m_data { s_ } { }
     sorted_vector_multiset ( std::initializer_list<T> init_ ) : m_data { std::forward<std::initializer_list<T>> ( init_ ) } { }
-    sorted_vector_multiset ( const sorted_vector_multiset & svs_ ) : m_data { svs_.m_data } { }
+    sorted_vector_multiset ( sorted_vector_multiset const & svs_ ) : m_data { svs_.m_data } { }
     sorted_vector_multiset ( sorted_vector_multiset && svs_ ) noexcept : m_data { std::forward<container> ( svs_.m_data ) } { }
-    sorted_vector_multiset ( const sorted_vector_set<T, Container, Compare> & svs_ ) : m_data { svs_.m_data } { }
+    sorted_vector_multiset ( sorted_vector_set const<T, Container, Compare> & svs_ ) : m_data { svs_.m_data } { }
     sorted_vector_multiset ( sorted_vector_set<T, Container, Compare> && svs_ ) noexcept : m_data { std::forward<container> ( svs_.m_data ) } { }
 
-    [[ maybe_unused ]] sorted_vector_multiset & operator = ( const sorted_vector_multiset & svs_ ) { m_data = svs_.m_data; return * this; }
+    [[ maybe_unused ]] sorted_vector_multiset & operator = ( sorted_vector_multiset const & svs_ ) { m_data = svs_.m_data; return * this; }
     [[ maybe_unused ]] sorted_vector_multiset & operator = ( sorted_vector_multiset && svs_ ) noexcept { m_data = std::move ( svs_.m_data ); return * this; }
-    [[ maybe_unused ]] sorted_vector_multiset & operator = ( const sorted_vector_set<T, Container, Compare> & svs_ ) { m_data = svs_.m_data; return * this; }
+    [[ maybe_unused ]] sorted_vector_multiset & operator = ( sorted_vector_set const<T, Container, Compare> & svs_ ) { m_data = svs_.m_data; return * this; }
     [[ maybe_unused ]] sorted_vector_multiset & operator = ( sorted_vector_set<T, Container, Compare> && svs_ ) noexcept { m_data = std::move ( svs_.m_data ); return * this; }
 
     // Return iterator to an element with key equivalent to key. If no such
@@ -349,9 +349,9 @@ class sorted_vector_multiset {
 
     void pop ( ) noexcept { m_data.pop_back ( ); }
 
-    void reserve ( const size_type r_ ) { m_data.reserve ( r_ ); }
+    void reserve ( size_type const r_ ) { m_data.reserve ( r_ ); }
     void clear ( ) noexcept { m_data.clear ( ); }
-    void resize ( const size_type s_ ) { m_data.resize ( ); }
+    void resize ( size_type const s_ ) { m_data.resize ( ); }
 
     [[ nodiscard ]] size_type size ( ) const noexcept { return m_data.size ( ); }
     [[ nodiscard ]] size_type capacity ( ) const noexcept { return m_data.capacity ( ); }
@@ -359,12 +359,12 @@ class sorted_vector_multiset {
 
     // This non-const operator allows assignment to the key (i.e. the key itself is modified),
     // better make sure that the assignment does not change the sort order!!!
-    [[ nodiscard ]] reference operator [ ] ( const size_type i_ ) noexcept { return m_data [ i_ ]; }
-    [[ nodiscard ]] const_reference operator [ ] ( const size_type i_ ) const noexcept { return m_data [ i_ ]; }
-    [[ nodiscard ]] reference nth ( const size_type i_ ) noexcept { return m_data [ i_ ]; }
-    [[ nodiscard ]] const_reference nth ( const size_type i_ ) const noexcept { return m_data [ i_ ]; }
-    [[ nodiscard ]] reference at ( const size_type i_ ) noexcept { return m_data.at ( i_ ); }
-    [[ nodiscard ]] const_reference at ( const size_type i_ ) const noexcept { return m_data.at ( i_ ); }
+    [[ nodiscard ]] reference operator [ ] ( size_type const i_ ) noexcept { return m_data [ i_ ]; }
+    [[ nodiscard ]] const_reference operator [ ] ( size_type const i_ ) const noexcept { return m_data [ i_ ]; }
+    [[ nodiscard ]] reference nth ( size_type const i_ ) noexcept { return m_data [ i_ ]; }
+    [[ nodiscard ]] const_reference nth ( size_type const i_ ) const noexcept { return m_data [ i_ ]; }
+    [[ nodiscard ]] reference at ( size_type const i_ ) noexcept { return m_data.at ( i_ ); }
+    [[ nodiscard ]] const_reference at ( size_type const i_ ) const noexcept { return m_data.at ( i_ ); }
 
     [[ nodiscard ]] iterator lower_bound ( const_reference t_ ) noexcept {
         return std::lower_bound ( std::begin ( m_data ), std::end ( m_data ), t_, Compare ( ) );

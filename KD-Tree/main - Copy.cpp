@@ -45,7 +45,7 @@
 namespace fs = std::filesystem;
 
 #include <SFML/System.hpp>
-#include <splitmix.hpp>
+#include <splitmix.hpp> // https://github.com/degski/Sax/blob/master/splitmix.hpp
 #include <plf/plf_nanotimer.h>
 
 using Point = sf::Vector2f;

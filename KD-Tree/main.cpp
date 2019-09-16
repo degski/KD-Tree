@@ -32,7 +32,7 @@
 #include <forward_list>
 #include <fstream>
 #include <initializer_list>
-#include <iostream>
+#include <sax/iostream.hpp>
 #include <iterator>
 #include <list>
 #include <map>
@@ -47,14 +47,14 @@ namespace fs = std::filesystem;
 #include <spatial/idle_point_multiset.hpp>
 #include <spatial/neighbor_iterator.hpp>
 
-#include <splitmix.hpp>
+#include <sax/splitmix.hpp> // https://github.com/degski/Sax/blob/master/splitmix.hpp
+#include <sax/uniform_int_distribution.hpp>
+
 #include <plf/plf_nanotimer.h>
 
 #include "ikdtree.hpp"
 #include "kdtree.h"
 #include "kdtree2.hpp"
-
-#define nl '\n'
 
 #define likely(x)      __builtin_expect(!!(x), 1)
 #define unlikely(x)    __builtin_expect(!!(x), 0)
@@ -163,7 +163,7 @@ template<typename forward_it, typename value_type>
 
 bool test ( const int n_ ) noexcept {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
+    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
 
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 20.0f, 40.0f };
@@ -193,8 +193,8 @@ bool test ( const int n_ ) noexcept {
 
 int wmain68461 ( ) {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
-    std::uniform_int_distribution<int> dis { 16, 10'000 };
+    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    sax::uniform_int_distribution<int> dis { 16, 10'000 };
 
     for ( int i = 0; i < 1'000; ++i ) {
         std::cout << std::boolalpha << test ( dis ( rng ) ) << nl;
@@ -421,7 +421,7 @@ struct KDTree {
 
 int wmain77897897 ( ) {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
+    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 0.0f,  40.0f };
 
@@ -563,7 +563,7 @@ int wmain77897897 ( ) {
 
 int main877989 ( ) {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
+    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
 
     std::uniform_real_distribution<float> disy { 0.0f, 550.0f };
     std::uniform_real_distribution<float> disz { 0.0f, 100.0f };
@@ -705,7 +705,7 @@ int main877989 ( ) {
 
 int wmain89879 ( ) {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
+    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100'000.0f };
     std::uniform_real_distribution<float> disx { 0.0f,  40'000.0f };
 
@@ -1289,7 +1289,7 @@ struct Tree2D {
 
 bool test2 ( const int n_ ) noexcept {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
 
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
     std::uniform_real_distribution<float> disx { 20.0f, 40.0f };
@@ -1322,8 +1322,8 @@ bool test2 ( const int n_ ) noexcept {
 
 int wmain65152 ( ) {
 
-    splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
-    std::uniform_int_distribution<int> dis { 6, 20 };
+    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+    sax::uniform_int_distribution<int> dis { 6, 20 };
 
     for ( int i = 0; i < 1'000; ++i ) {
         std::cout << std::boolalpha << test2 ( dis ( rng ) ) << nl;
@@ -1357,7 +1357,7 @@ int wmain ( ) {
 
 #include <boost/multi_array.hpp>
 
-splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
+sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
 std::uniform_real_distribution<float> disy { 0.0f, 100'000.0f };
 std::uniform_real_distribution<float> disx { 0.0f,  40'000.0f };
 
