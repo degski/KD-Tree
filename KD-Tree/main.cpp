@@ -170,14 +170,14 @@ using fran = std::uniform_real_distribution<float>;
 
 bool test ( int const n_ ) {
     sax::Rng rng{ std::uint64_t ( n_ + 1 ) };
-    fran disy{ fran ( 0.0f, 4999.0f ) ( rng ), fran ( 5000.0f, 9999.0f ) ( rng ) };
-    fran disx{ fran ( 0.0f, 4999.0f ) ( rng ), fran ( 5000.0f, 9999.0f ) ( rng ) };
+    fran disy{ fran ( 0.0f, 4'999.0f ) ( rng ), fran ( 5'000.0f, 9'999.0f ) ( rng ) };
+    fran disx{ fran ( 0.0f, 4'999.0f ) ( rng ), fran ( 5'000.0f, 9'999.0f ) ( rng ) };
     std::vector<kd::Point2f> points;
     points.reserve ( n_ );
     for ( int i = 0; i < n_; ++i )
         points.emplace_back ( disx ( rng ), disy ( rng ) );
     kd::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
-    for ( int i = 0; i < 100'000; ++i ) {
+    for ( int i = 0; i < 1'000; ++i ) {
         kd::Point2f const ptf{ disx ( rng ), disy ( rng ) }, kdt{ *tree.nn_pointer ( ptf ) },
             ls{ *nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) };
         if ( nn_distance_squared ( ptf, kdt ) != nn_distance_squared ( ptf, ls ) ) {
@@ -197,7 +197,7 @@ int main ( ) {
     sax::Rng rng{ sax::fixed_seed ( ) };
     sax::uniform_int_distribution<int> dis{ 16, 10'000 };
     try {
-        for ( int i = 0; i < 1'000; ++i )
+        for ( int i = 0; i < 10'000; ++i )
             std::cout << i << ' ' << std::boolalpha << test ( dis ( rng ) ) << nl;
     }
     catch ( ... ) {
