@@ -966,8 +966,6 @@ struct Tree3D {
         return out_;
     }
 
-    [[nodiscard]] std::size_t capacity ( ) const noexcept { return m_data.size ( ); }
-
     private:
     template<typename U>
     [[nodiscard]] static constexpr U capacity ( U const i_ ) noexcept {
