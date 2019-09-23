@@ -195,9 +195,9 @@ bool test ( int const n_ ) {
 int main ( ) {
     std::exception_ptr eptr;
     sax::Rng rng{ sax::fixed_seed ( ) };
-    sax::uniform_int_distribution<int> dis{ 16, 10'000 };
+    sax::uniform_int_distribution<int> dis{ 10, 100'000 };
     try {
-        for ( int i = 0; i < 10'000; ++i )
+        for ( int i = 0; i < 100'000; ++i )
             std::cout << i << ' ' << std::boolalpha << test ( dis ( rng ) ) << nl;
     }
     catch ( ... ) {

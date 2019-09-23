@@ -339,14 +339,14 @@ struct Tree2D {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > detail::linear_bound ) {
                 if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
-                    std::fill ( std::begin ( m_data ), std::end ( m_data ),
+                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
                                 value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 }
                 else {
                     m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type{ std::numeric_limits<base_type>::max ( ),
                                                                                         std::numeric_limits<base_type>::max ( ) } );
                 }
-                m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
+                m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                 m_dim        = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
                 points.reserve ( il_.size ( ) );
@@ -434,7 +434,7 @@ struct Tree2D {
             auto const n = std::distance ( first_, last_ );
             if ( n > detail::linear_bound ) {
                 if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
-                    std::fill ( std::begin ( m_data ), std::end ( m_data ),
+                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
                                 value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 }
                 else {
@@ -442,7 +442,7 @@ struct Tree2D {
                         capacity<std::size_t> ( static_cast<std::size_t> ( n ) ),
                         value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 }
-                m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
+                m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                 m_dim        = get_dimensions_order ( first_, last_ );
                 switch ( m_dim ) {
                     case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); break;
@@ -512,29 +512,24 @@ struct Tree2D {
 };
 
 // Implicit KD full binary tree of dimension 3, P can be substituted by sf::Vector3<>.
-template<typename T, typename P = Point2<T>, typename C = std::vector<P>>
+template<typename T, typename P = Point3<T>, typename Type = vector_tag_t, std::size_t N = 0>
 struct Tree3D {
 
-    using value_type      = P;
-    using base_type       = T;
+    using value_type = P;
+    using base_type  = T;
+    using dist_type =
+        std::conditional_t<std::is_floating_point_v<base_type>, base_type, detail::signed_double_width_integer<base_type>>;
     using pointer         = value_type *;
     using reference       = value_type &;
     using const_pointer   = value_type const *;
     using const_reference = value_type const &;
 
-    using container = C;
+    using container_type = Type;
+    using container =
+        std::conditional_t<std::is_same_v<container_type, array_tag_t>, std::array<P, detail::array_size<N> ( )>, std::vector<P>>;
 
     using iterator       = typename container::iterator;
     using const_iterator = typename container::const_iterator;
-
-    struct nn_data {
-        // The point to which we are searching the closest neighbour.
-        value_type to;
-        // Pointer to the closest point.
-        const_pointer point;
-        // Distance squared.
-        base_type distance;
-    };
 
     private:
     template<typename forward_it>
@@ -639,149 +634,159 @@ struct Tree3D {
     }
 
     void nn_search_xy ( const_pointer const p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
-        if ( d < nearest.distance ) {
-            nearest.distance = d;
-            nearest.point    = p_;
+        base_type d = Tree3D::distance_squared ( *p_, m_to );
+        if ( d < m_min_distance ) {
+            m_min_distance = d;
+            m_point        = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->x - nearest.to.x ) > base_type{ 0 } ) {
+        if ( ( d = p_->x - m_to.x ) > base_type{ 0 } ) {
             nn_search_yz ( left ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_yz ( right ( p_ ) );
         }
         else {
             nn_search_yz ( right ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_yz ( left ( p_ ) );
         }
     }
     void nn_search_yz ( const_pointer const p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
-        if ( d < nearest.distance ) {
-            nearest.distance = d;
-            nearest.point    = p_;
+        base_type d = Tree3D::distance_squared ( *p_, m_to );
+        if ( d < m_min_distance ) {
+            m_min_distance = d;
+            m_point        = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->y - nearest.to.y ) > base_type{ 0 } ) {
+        if ( ( d = p_->y - m_to.y ) > base_type{ 0 } ) {
             nn_search_zx ( left ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_zx ( right ( p_ ) );
         }
         else {
             nn_search_zx ( right ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_zx ( left ( p_ ) );
         }
     }
     void nn_search_zx ( const_pointer const p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
-        if ( d < nearest.distance ) {
-            nearest.distance = d;
-            nearest.point    = p_;
+        base_type d = Tree3D::distance_squared ( *p_, m_to );
+        if ( d < m_min_distance ) {
+            m_min_distance = d;
+            m_point        = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->z - nearest.to.z ) > base_type{ 0 } ) {
+        if ( ( d = p_->z - m_to.z ) > base_type{ 0 } ) {
             nn_search_xy ( left ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_xy ( right ( p_ ) );
         }
         else {
             nn_search_xy ( right ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_xy ( left ( p_ ) );
         }
     }
 
     void nn_search_xz ( const_pointer const p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
-        if ( d < nearest.distance ) {
-            nearest.distance = d;
-            nearest.point    = p_;
+        base_type d = Tree3D::distance_squared ( *p_, m_to );
+        if ( d < m_min_distance ) {
+            m_min_distance = d;
+            m_point        = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->x - nearest.to.x ) > base_type{ 0 } ) {
+        if ( ( d = p_->x - m_to.x ) > base_type{ 0 } ) {
             nn_search_zy ( left ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_zy ( right ( p_ ) );
         }
         else {
             nn_search_zy ( right ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_zy ( left ( p_ ) );
         }
     }
     void nn_search_yx ( const_pointer const p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
-        if ( d < nearest.distance ) {
-            nearest.distance = d;
-            nearest.point    = p_;
+        base_type d = Tree3D::distance_squared ( *p_, m_to );
+        if ( d < m_min_distance ) {
+            m_min_distance = d;
+            m_point        = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->y - nearest.to.y ) > base_type{ 0 } ) {
+        if ( ( d = p_->y - m_to.y ) > base_type{ 0 } ) {
             nn_search_xz ( left ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_xz ( right ( p_ ) );
         }
         else {
             nn_search_xz ( right ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_xz ( left ( p_ ) );
         }
     }
     void nn_search_zy ( const_pointer const p_ ) const noexcept {
-        base_type d = Tree3D::distance_squared ( *p_, nearest.to );
-        if ( d < nearest.distance ) {
-            nearest.distance = d;
-            nearest.point    = p_;
+        base_type d = Tree3D::distance_squared ( *p_, m_to );
+        if ( d < m_min_distance ) {
+            m_min_distance = d;
+            m_point        = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
-        if ( ( d = p_->z - nearest.to.z ) > base_type{ 0 } ) {
+        if ( ( d = p_->z - m_to.z ) > base_type{ 0 } ) {
             nn_search_yx ( left ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_yx ( right ( p_ ) );
         }
         else {
             nn_search_yx ( right ( p_ ) );
-            if ( ( ( d * d ) < nearest.distance ) )
+            if ( ( ( d * d ) < m_min_distance ) )
                 nn_search_yx ( left ( p_ ) );
         }
     }
 
     void nn_search_linear ( const_pointer const ) const noexcept {
         for ( auto const & v : m_data ) {
-            auto const d = distance_squared ( nearest.to, v );
-            if ( d < nearest.distance ) {
-                nearest.point    = &v;
-                nearest.distance = d;
+            auto const d = distance_squared ( m_to, v );
+            if ( d < m_min_distance ) {
+                m_point        = &v;
+                m_min_distance = d;
             }
         }
     }
 
     container m_data;
-    const_pointer m_leaf_start;
+    const_pointer m_leaf_start    = nullptr;
+    mutable const_pointer m_point = nullptr; // Mutable types are class global result types.
+    std::size_t m_dim;
+    mutable value_type m_to;
+    // Distance squared.
+    mutable dist_type m_min_distance = std::numeric_limits<dist_type>::max ( );
+
     void ( Tree3D::*nn_search ) ( const_pointer const ) const noexcept;
 
     public:
-    mutable nn_data nearest;
-
     Tree3D ( ) noexcept {}
-    Tree3D ( Tree3D const & )     = delete;
-    Tree3D ( Tree3D && ) noexcept = delete;
+    Tree3D ( Tree3D const & ) = delete;
+    Tree3D ( Tree3D && rhs_ ) noexcept :
+        m_data{ std::move ( rhs_.m_data ) }, m_leaf_start{ rhs_.m_leaf_start }, m_dim{ rhs_.m_dim } {}
 
     Tree3D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > detail::linear_bound ) {
-                m_data.resize ( capacity<std::size_t> ( il_.size ( ) ),
-                                value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ),
-                                            std::numeric_limits<base_type>::max ( ) } );
-                m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
+                if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
+                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
+                                value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                }
+                else {
+                    m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type{ std::numeric_limits<base_type>::max ( ),
+                                                                                        std::numeric_limits<base_type>::max ( ) } );
+                }
+                m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                 container points;
                 points.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
@@ -813,8 +818,13 @@ struct Tree3D {
                 }
             }
             else {
-                m_data.reserve ( il_.size ( ) );
-                std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
+                if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
+                    std::copy_n ( std::begin ( il_ ), il_.size ( ), std::begin ( m_data ) );
+                }
+                else {
+                    m_data.reserve ( il_.size ( ) );
+                    std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
+                }
                 nn_search = &Tree3D::nn_search_linear;
             }
         }
@@ -850,7 +860,12 @@ struct Tree3D {
     }
 
     Tree3D & operator= ( Tree3D const & ) = delete;
-    Tree3D & operator= ( Tree3D && ) noexcept = delete;
+    Tree3D & operator                     = ( Tree3D && rhs_ ) noexcept {
+        m_data       = std::move ( rhs_.m_data );
+        m_leaf_start = rhs_.m_leaf_start;
+        m_dim        = rhs_.m_dim;
+        return *this;
+    }
 
     template<typename size_type>
     [[nodiscard]] reference operator[] ( size_type const i_ ) noexcept {
@@ -866,10 +881,16 @@ struct Tree3D {
         if ( first_ < last_ ) {
             auto const n = std::distance ( first_, last_ );
             if ( n > detail::linear_bound ) {
-                m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ),
-                                value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ),
-                                            std::numeric_limits<base_type>::max ( ) } );
-                m_leaf_start = m_data.data ( ) + ( m_data.size ( ) / 2 ) - 1;
+                if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
+                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
+                                value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                }
+                else {
+                    m_data.resize (
+                        capacity<std::size_t> ( static_cast<std::size_t> ( n ) ),
+                        value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                }
+                m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
                     case 0:
                         kd_construct_xy ( m_data.data ( ), first_, last_ );
@@ -898,22 +919,39 @@ struct Tree3D {
                 }
             }
             else {
-                m_data.reserve ( n );
-                std::copy ( first_, last_, std::back_inserter ( m_data ) );
+                if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
+                    std::copy_n ( first_, n, std::begin ( m_data ) );
+                }
+                else {
+                    m_data.reserve ( n );
+                    std::copy ( first_, last_, std::back_inserter ( m_data ) );
+                }
                 nn_search = &Tree3D::nn_search_linear;
             }
         }
     }
 
-    [[nodiscard]] const_pointer nn_ptr ( value_type const & point_ ) const noexcept {
-        nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
+    [[nodiscard]] const_pointer nn_pointer ( value_type const & point_ ) const noexcept {
+        m_to           = point_;
+        m_min_distance = std::numeric_limits<dist_type>::max ( );
         ( this->*nn_search ) ( m_data.data ( ) );
-        return nearest.point;
+        return m_point;
+    }
+    [[nodiscard]] std::pair<const_pointer, base_type> nn_pointer_distance ( value_type const & point_ ) const noexcept {
+        return { nn_pointer ( point_ ), static_cast<base_type> ( m_min_distance ) };
     }
 
-    [[nodiscard]] std::ptrdiff_t nn_idx ( value_type const & point_ ) const noexcept { return nn_ptr ( point_ ) - m_data.data ( ); }
+    [[nodiscard]] std::ptrdiff_t nn_index ( value_type const & point_ ) const noexcept {
+        return nn_pointer ( point_ ) - m_data.data ( );
+    }
+    [[nodiscard]] std::pair<std::ptrdiff_t, base_type> nn_index_distance ( value_type const & point_ ) const noexcept {
+        return { nn_index ( point_ ), static_cast<base_type> ( m_min_distance ) };
+    }
 
-    [[nodiscard]] value_type nn_pnt ( value_type const & point_ ) const noexcept { return *nn_ptr ( point_ ); }
+    [[nodiscard]] base_type nn_distance ( value_type const & point_ ) const noexcept {
+        assert ( m_min_distance != std::numeric_limits<dist_type>::max ( ) );
+        return static_cast<base_type> ( m_min_distance );
+    }
 
     [[nodiscard]] static constexpr base_type distance_squared ( value_type const & p1_, value_type const & p2_ ) noexcept {
         return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) +
