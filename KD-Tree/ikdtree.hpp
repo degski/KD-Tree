@@ -31,7 +31,9 @@
 #include <limits>
 #include <type_traits>
 
-namespace kd {
+#include <sax/stl.hpp>
+
+namespace sax {
 namespace detail {
 
 constexpr std::size_t linear_bound = 44u;
@@ -472,14 +474,14 @@ struct Tree2D {
         }
         return m_point;
     }
-    [[nodiscard]] std::pair<const_pointer, base_type> nn_pointer_distance ( value_type const & point_ ) const noexcept {
+    [[nodiscard]] sax::pair<const_pointer, base_type> nn_pointer_distance ( value_type const & point_ ) const noexcept {
         return { nn_pointer ( point_ ), static_cast<base_type> ( m_min_distance ) };
     }
 
     [[nodiscard]] std::ptrdiff_t nn_index ( value_type const & point_ ) const noexcept {
         return nn_pointer ( point_ ) - m_data.data ( );
     }
-    [[nodiscard]] std::pair<std::ptrdiff_t, base_type> nn_index_distance ( value_type const & point_ ) const noexcept {
+    [[nodiscard]] sax::pair<std::ptrdiff_t, base_type> nn_index_distance ( value_type const & point_ ) const noexcept {
         return { nn_index ( point_ ), static_cast<base_type> ( m_min_distance ) };
     }
 
@@ -540,7 +542,7 @@ struct Tree3D {
             std::minmax_element ( first_, last_, [] ( auto const & a, auto const & b ) { return a.y < b.y; } );
         auto const [ min_z, max_z ] =
             std::minmax_element ( first_, last_, [] ( auto const & a, auto const & b ) { return a.z < b.z; } );
-        std::pair<base_type, detail::same_sized_int<base_type>> dx{ max_x->x - min_x->x, 0 }, dy{ max_y->y - min_y->y, 1 },
+        sax::pair<base_type, detail::same_sized_int<base_type>> dx{ max_x->x - min_x->x, 0 }, dy{ max_y->y - min_y->y, 1 },
             dz{ max_z->z - min_z->z, 2 };
         // sort list of 3.
         if ( dx.first < dy.first )
@@ -937,14 +939,14 @@ struct Tree3D {
         ( this->*nn_search ) ( m_data.data ( ) );
         return m_point;
     }
-    [[nodiscard]] std::pair<const_pointer, base_type> nn_pointer_distance ( value_type const & point_ ) const noexcept {
+    [[nodiscard]] sax::pair<const_pointer, base_type> nn_pointer_distance ( value_type const & point_ ) const noexcept {
         return { nn_pointer ( point_ ), static_cast<base_type> ( m_min_distance ) };
     }
 
     [[nodiscard]] std::ptrdiff_t nn_index ( value_type const & point_ ) const noexcept {
         return nn_pointer ( point_ ) - m_data.data ( );
     }
-    [[nodiscard]] std::pair<std::ptrdiff_t, base_type> nn_index_distance ( value_type const & point_ ) const noexcept {
+    [[nodiscard]] sax::pair<std::ptrdiff_t, base_type> nn_index_distance ( value_type const & point_ ) const noexcept {
         return { nn_index ( point_ ), static_cast<base_type> ( m_min_distance ) };
     }
 
@@ -978,4 +980,4 @@ template<typename base_type, std::size_t S>
 using ikdtree = typename std::conditional<2 == S, Tree2D<base_type>,
                                           typename std::conditional<3 == S, Tree3D<base_type>, detail::message<S>>::type>::type;
 
-} // namespace kd
+} // namespace sax

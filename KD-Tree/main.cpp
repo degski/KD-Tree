@@ -62,29 +62,29 @@ namespace fs = std::filesystem;
 
 int main6576756 ( ) {
 
-    // std::vector<kd::Point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, {
+    // std::vector<sax::Point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, {
     // 8, 1 }, { 7, 2 } };
-    std::vector<kd::Point2f> points{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
-                                     { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
+    std::vector<sax::Point2f> points{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
+                                      { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    kd::Tree2D<float> tree{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
-                            { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
+    sax::Tree2D<float> tree{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
+                             { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
 
     std::cout << nl << tree << nl << nl;
 
-    kd::Point2f ptf{ 7.6f, 7.9f };
+    sax::Point2f ptf{ 7.6f, 7.9f };
 
     std::cout << nl << nl << "nearest " << nl << *tree.nn_pointer ( ptf ) << nl;
 
     std::cout << nl;
 
     for ( auto p : points ) {
-        std::cout << kd::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
+        std::cout << sax::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
     }
 
     return EXIT_SUCCESS;
@@ -142,10 +142,10 @@ struct Point2 {
 [[nodiscard]] constexpr auto nn_distance_squared ( Point2<float> const & p1_, Point2<float> const & p2_ ) noexcept {
     return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
 }
-[[nodiscard]] constexpr auto nn_distance_squared ( kd::Point2f const & p1_, kd::Point2f const & p2_ ) noexcept {
+[[nodiscard]] constexpr auto nn_distance_squared ( sax::Point2f const & p1_, sax::Point2f const & p2_ ) noexcept {
     return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
 }
-[[nodiscard]] constexpr auto nn_distance_squared ( kd::Point3f const & p1_, kd::Point3f const & p2_ ) noexcept {
+[[nodiscard]] constexpr auto nn_distance_squared ( sax::Point3f const & p1_, sax::Point3f const & p2_ ) noexcept {
     return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) ) +
            ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) );
 }
@@ -172,13 +172,13 @@ bool test ( int const n_ ) {
     sax::Rng rng{ std::uint64_t ( n_ + 1 ) };
     fran disy{ fran ( 0.0f, 4'999.0f ) ( rng ), fran ( 5'000.0f, 9'999.0f ) ( rng ) };
     fran disx{ fran ( 0.0f, 4'999.0f ) ( rng ), fran ( 5'000.0f, 9'999.0f ) ( rng ) };
-    std::vector<kd::Point2f> points;
+    std::vector<sax::Point2f> points;
     points.reserve ( n_ );
     for ( int i = 0; i < n_; ++i )
         points.emplace_back ( disx ( rng ), disy ( rng ) );
-    kd::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
-    for ( int i = 0; i < 1'000; ++i ) {
-        kd::Point2f const ptf{ disx ( rng ), disy ( rng ) }, kdt{ *tree.nn_pointer ( ptf ) },
+    sax::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
+    for ( int i = 0, m = n_ / 1'000; i < m; ++i ) {
+        sax::Point2f const ptf{ disx ( rng ), disy ( rng ) }, kdt{ *tree.nn_pointer ( ptf ) },
             ls{ *nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) };
         if ( nn_distance_squared ( ptf, kdt ) != nn_distance_squared ( ptf, ls ) ) {
             std::cout << "fail\n";
@@ -191,11 +191,10 @@ bool test ( int const n_ ) {
     }
     return true;
 }
-
 int main ( ) {
     std::exception_ptr eptr;
     sax::Rng rng{ sax::fixed_seed ( ) };
-    sax::uniform_int_distribution<int> dis{ 10, 100'000 };
+    sax::uniform_int_distribution<int> dis{ 10, 1'000'000 };
     try {
         for ( int i = 0; i < 100'000; ++i )
             std::cout << i << ' ' << std::boolalpha << test ( dis ( rng ) ) << nl;
@@ -214,7 +213,7 @@ using namespace std;
 
 constexpr int k = 2;
 
-// A structure to represent node of kd tree
+// A structure to represent node of sax tree
 struct Node {
     int Point2f [ k ]; // To store k dimensional Point2f
     Node *left, *right;
@@ -393,12 +392,12 @@ int main8798797 ( ) {
 using PointArray = std::array<float, 2>;
 using PointToID = spatial::idle_point_multiset<2, PointArray>;
 
-[[ nodiscard ]] PointArray toArray ( kd::Point2f const & v_ ) noexcept {
+[[ nodiscard ]] PointArray toArray ( sax::Point2f const & v_ ) noexcept {
     return *reinterpret_cast<const PointArray*> ( &v_ );
 }
 
-[[ nodiscard ]] kd::Point2f fromArray ( const PointArray & p_ ) noexcept {
-    return *reinterpret_cast<kd::Point2f const*> ( &p_ );
+[[ nodiscard ]] sax::Point2f fromArray ( const PointArray & p_ ) noexcept {
+    return *reinterpret_cast<sax::Point2f const*> ( &p_ );
 }
 
 
@@ -409,15 +408,15 @@ struct KDTree {
     template<typename forward_it>
     KDTree ( forward_it first_, forward_it last_ ) noexcept :
         ptree { kd_create ( 2 ) } {
-        std::for_each ( first_, last_, [ this ] ( kd::Point2f & pos ) { kd_insertf ( ptree, ( const float * ) & pos, NULL ); } );
+        std::for_each ( first_, last_, [ this ] ( sax::Point2f & pos ) { kd_insertf ( ptree, ( const float * ) & pos, NULL ); } );
     }
 
     ~KDTree ( ) noexcept {
         kd_free ( ptree );
     }
 
-    [[ nodiscard ]] kd::Point2f nn_pointer ( kd::Point2f const & pos_ ) const noexcept {
-        kd::Point2f pos;
+    [[ nodiscard ]] sax::Point2f nn_pointer ( sax::Point2f const & pos_ ) const noexcept {
+        sax::Point2f pos;
         struct kdres * res = kd_nearestf ( ptree, ( const float * ) & pos_ );
         kd_res_itemf ( res, ( float * ) & pos );
         kd_res_free ( res );
@@ -437,7 +436,7 @@ int main77897 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -446,11 +445,11 @@ int main77897 ( ) {
         timer.start ( );
 
         KDTree tree ( std::begin ( points ), std::end ( points ) );
-        // kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        // sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -469,7 +468,7 @@ int main77897 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -478,11 +477,11 @@ int main77897 ( ) {
         timer.start ( );
 
         KDTree tree ( std::begin ( points ), std::end ( points ) );
-        // kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        // sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -501,7 +500,7 @@ int main77897 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -510,11 +509,11 @@ int main77897 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -533,7 +532,7 @@ int main77897 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -542,11 +541,11 @@ int main77897 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -581,7 +580,7 @@ int main877989 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -590,11 +589,11 @@ int main877989 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -613,7 +612,7 @@ int main877989 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -622,11 +621,11 @@ int main877989 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -645,7 +644,7 @@ int main877989 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point3f> points;
+        std::vector<sax::Point3f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ), disz ( rng ) );
@@ -654,11 +653,11 @@ int main877989 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kd::Tree3D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree3D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point3f ptf;
+        sax::Point3f ptf;
 
         timer.start ( );
 
@@ -677,7 +676,7 @@ int main877989 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point3f> points;
+        std::vector<sax::Point3f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ), disz ( rng ) );
@@ -686,11 +685,11 @@ int main877989 ( ) {
         timer.start ( );
 
         // KDTree tree ( std::begin ( points ), std::end ( points ) );
-        kd::Tree3D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree3D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point3f ptf;
+        sax::Point3f ptf;
 
         timer.start ( );
 
@@ -721,7 +720,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -729,11 +728,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -752,7 +751,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -760,11 +759,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -783,7 +782,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -791,11 +790,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -814,7 +813,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -822,11 +821,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -845,7 +844,7 @@ int wmain89879 ( ) {
         plf::nanotimer timer;
         double st;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
 
         for ( int i = 0; i < n; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
@@ -853,11 +852,11 @@ int wmain89879 ( ) {
 
         timer.start ( );
 
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
 
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
-        kd::Point2f ptf;
+        sax::Point2f ptf;
 
         timer.start ( );
 
@@ -1388,11 +1387,11 @@ double time_a_search ( kdtree2::KDTree* tree, int nsearch ) {
     return timer.get_elapsed_us ( ) / 1'000'000.0;
 }
 
-double time_a_search ( kd::Tree2D<float> & tree, int nsearch ) {
+double time_a_search ( sax::Tree2D<float> & tree, int nsearch ) {
 
     plf::nanotimer timer;
 
-    kd::Point2f ptf;
+    sax::Point2f ptf;
 
     timer.start ( );
 
@@ -1425,7 +1424,7 @@ void time_random_searches ( kdtree2::KDTree* tree ) {
     }
 }
 
-void time_random_searches ( kd::Tree2D<float> & tree ) {
+void time_random_searches ( sax::Tree2D<float> & tree ) {
 
   // emit the number of searches per second.
 
@@ -1478,13 +1477,13 @@ int main684984 ( ) {
     {
         plf::nanotimer timer;
 
-        std::vector<kd::Point2f> points;
+        std::vector<sax::Point2f> points;
         for ( int i = 0; i < N; ++i ) {
             points.emplace_back ( disx ( rng ), disy ( rng ) );
         }
 
         timer.start ( );
-        kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+        sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
         std::cout << "elapsed construction " << ( std::uint64_t ) timer.get_elapsed_us ( ) << " us" << nl;
 
         time_random_searches ( tree );
@@ -1577,7 +1576,7 @@ int wmain879808 ( ) {
     std::uniform_real_distribution<float> pdisy { 0.0f, 100'000.0f };
     std::uniform_real_distribution<float> pdisx { 0.0f,  40'000.0f };
 
-    KNearest<kd::Point2f> knn ( 50u );
+    KNearest<sax::Point2f> knn ( 50u );
 
     for ( int i = 0; i < 500; ++i ) {
         knn.emplace ( pdisv ( rng ), pdisx ( rng ), pdisy ( rng ) );
