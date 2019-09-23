@@ -166,10 +166,12 @@ template<typename forward_it, typename value_type>
     return &*found;
 }
 
+using fran = std::uniform_real_distribution<float>;
+
 bool test ( int const n_ ) {
     sax::Rng rng{ std::uint64_t ( n_ + 1 ) };
-    std::uniform_real_distribution<float> disy{ 0.0f, 1000.0f };
-    std::uniform_real_distribution<float> disx{ 200.0f, 400.0f };
+    fran disy{ fran ( 0.0f, 4999.0f ) ( rng ), fran ( 5000.0f, 9999.0f ) ( rng ) };
+    fran disx{ fran ( 0.0f, 4999.0f ) ( rng ), fran ( 5000.0f, 9999.0f ) ( rng ) };
     std::vector<kd::Point2f> points;
     points.reserve ( n_ );
     for ( int i = 0; i < n_; ++i )
