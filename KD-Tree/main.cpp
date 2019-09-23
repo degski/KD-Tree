@@ -10,8 +10,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -32,11 +32,11 @@
 #include <forward_list>
 #include <fstream>
 #include <initializer_list>
-#include <sax/iostream.hpp>
 #include <iterator>
 #include <list>
 #include <map>
 #include <random>
+#include <sax/iostream.hpp>
 #include <stack>
 #include <string>
 #include <type_traits>
@@ -47,7 +47,8 @@ namespace fs = std::filesystem;
 #include <spatial/idle_point_multiset.hpp>
 #include <spatial/neighbor_iterator.hpp>
 
-#include <sax/splitmix.hpp> // https://github.com/degski/Sax/blob/master/splitmix.hpp
+#include <sax/prng_jsf.hpp>
+#include <sax/splitmix.hpp>
 #include <sax/uniform_int_distribution.hpp>
 
 #include <plf/plf_nanotimer.h>
@@ -56,27 +57,29 @@ namespace fs = std::filesystem;
 #include "kdtree.h"
 #include "kdtree2.hpp"
 
-#define likely(x)      __builtin_expect(!!(x), 1)
-#define unlikely(x)    __builtin_expect(!!(x), 0)
+#define likely( x ) __builtin_expect ( !!( x ), 1 )
+#define unlikely( x ) __builtin_expect ( !!( x ), 0 )
 
+int main6576756 ( ) {
 
-int wmain ( ) {
-
-    // std::vector<kd::Point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    std::vector<kd::Point2f> points { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    // std::vector<kd::Point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, {
+    // 8, 1 }, { 7, 2 } };
+    std::vector<kd::Point2f> points{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
+                                     { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points ) {
         std::cout << p;
     }
     std::cout << nl;
 
-    kd::Tree2D<float> tree { { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 }, { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
+    kd::Tree2D<float> tree{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
+                            { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
 
     std::cout << nl << tree << nl << nl;
 
-    kd::Point2f ptf { 7.6f, 7.9f };
+    kd::Point2f ptf{ 7.6f, 7.9f };
 
-    std::cout << nl << nl << "nearest " << nl << tree.nn_pointer ( ptf ) << nl;
+    std::cout << nl << nl << "nearest " << nl << *tree.nn_pointer ( ptf ) << nl;
 
     std::cout << nl;
 
@@ -87,8 +90,15 @@ int wmain ( ) {
     return EXIT_SUCCESS;
 }
 
-#if 0
-
+void handleEptr ( std::exception_ptr eptr ) { // Passing by value is ok.
+    try {
+        if ( eptr )
+            std::rethrow_exception ( eptr );
+    }
+    catch ( const std::exception & e ) {
+        std::cout << "Caught exception \"" << e.what ( ) << "\"\n";
+    }
+}
 
 template<typename T>
 struct Point2 {
@@ -97,35 +107,31 @@ struct Point2 {
 
     value_type x, y;
 
-    Point2 ( ) noexcept = default;
-    Point2 ( const Point2 & ) noexcept = default;
-    Point2 ( Point2 && ) noexcept = default;
-    Point2 ( value_type && x_, value_type && y_ ) noexcept :
-        x { std::move ( x_ ) }, y { std::move ( y_ ) } {
-    }
+    Point2 ( ) noexcept                = default;
+    Point2 ( Point2 const & ) noexcept = default;
+    Point2 ( Point2 && ) noexcept      = default;
+    Point2 ( value_type && x_, value_type && y_ ) noexcept : x{ std::move ( x_ ) }, y{ std::move ( y_ ) } {}
 
-    [ [ maybe_unused ] ] Point2 & operator = ( const Point2 & ) noexcept = default;
-    [[ maybe_unused ]] Point2 & operator = ( Point2 && ) noexcept = default;
+    [[maybe_unused]] Point2 & operator= ( Point2 const & ) noexcept = default;
+    [[maybe_unused]] Point2 & operator= ( Point2 && ) noexcept = default;
 
-    [[ nodiscard ]] bool operator == ( const Point2 & p_ ) const noexcept {
-        return x == p_.x and y == p_.y;
-    }
-    [[ nodiscard ]] bool operator != ( const Point2 & p_ ) const noexcept {
-        return x != p_.x or y != p_.y;
-    }
+    [[nodiscard]] bool operator== ( Point2 const & p_ ) const noexcept { return x == p_.x and y == p_.y; }
+    [[nodiscard]] bool operator!= ( Point2 const & p_ ) const noexcept { return x != p_.x or y != p_.y; }
 
-    [[ maybe_unused ]] Point2 & operator += ( const Point2 & p_ ) noexcept {
-        x += p_.x; y += p_.y;
+    [[maybe_unused]] Point2 & operator+= ( Point2 const & p_ ) noexcept {
+        x += p_.x;
+        y += p_.y;
         return *this;
     }
-    [[ maybe_unused ]] Point2 & operator -= ( const Point2 & p_ ) noexcept {
-        x -= p_.x; y -= p_.y;
+    [[maybe_unused]] Point2 & operator-= ( Point2 const & p_ ) noexcept {
+        x -= p_.x;
+        y -= p_.y;
         return *this;
     }
 
     template<typename Stream>
-    [ [ maybe_unused ] ] friend Stream & operator << ( Stream & out_, const Point2 & p_ ) noexcept {
-        if ( Point2 { std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ )
+    [[maybe_unused]] friend Stream & operator<< ( Stream & out_, Point2 const & p_ ) noexcept {
+        if ( Point2{ std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ )
             out_ << '<' << p_.x << ' ' << p_.y << '>';
         else
             out_ << "<* *>";
@@ -133,75 +139,73 @@ struct Point2 {
     }
 };
 
-
-[[ nodiscard ]] constexpr auto nn_distance_squared ( const Point2<float> & p1_, const Point2<float> & p2_ ) noexcept {
+[[nodiscard]] constexpr auto nn_distance_squared ( Point2<float> const & p1_, Point2<float> const & p2_ ) noexcept {
     return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
 }
-[[ nodiscard ]] constexpr auto nn_distance_squared ( const kd::Point2f & p1_, const kd::Point2f & p2_ ) noexcept {
+[[nodiscard]] constexpr auto nn_distance_squared ( kd::Point2f const & p1_, kd::Point2f const & p2_ ) noexcept {
     return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) );
 }
-[[ nodiscard ]] constexpr auto nn_distance_squared ( const kd::Point3f & p1_, const kd::Point3f & p2_ ) noexcept {
-    return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) ) + ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) );
+[[nodiscard]] constexpr auto nn_distance_squared ( kd::Point3f const & p1_, kd::Point3f const & p2_ ) noexcept {
+    return ( ( p1_.x - p2_.x ) * ( p1_.x - p2_.x ) ) + ( ( p1_.y - p2_.y ) * ( p1_.y - p2_.y ) ) +
+           ( ( p1_.z - p2_.z ) * ( p1_.z - p2_.z ) );
 }
 
 template<typename forward_it, typename value_type>
-[[ nodiscard ]] value_type nn_search_linear ( forward_it first_, forward_it last_, const value_type & p_ ) noexcept {
-    using base_type = decltype ( p_.x );
+[[nodiscard]] value_type * nn_search_linear ( forward_it first_, forward_it last_, value_type const & p_ ) noexcept {
+    using base_type        = decltype ( p_.x );
     base_type min_distance = std::numeric_limits<base_type>::max ( );
-    forward_it found = last_;
+    forward_it found       = last_;
     while ( first_ != last_ ) {
-        const base_type d = nn_distance_squared ( p_, * first_ );
+        auto const d = nn_distance_squared ( p_, *first_ );
         if ( d < min_distance ) {
             min_distance = d;
-            found = first_;
+            found        = first_;
         }
         ++first_;
     }
-    return * found;
+    return &*found;
 }
 
-
-bool test ( const int n_ ) noexcept {
-
-    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
-
-    std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
-    std::uniform_real_distribution<float> disx { 20.0f, 40.0f };
-
+bool test ( int const n_ ) {
+    sax::Rng rng{ std::uint64_t ( n_ + 1 ) };
+    std::uniform_real_distribution<float> disy{ 0.0f, 1000.0f };
+    std::uniform_real_distribution<float> disx{ 200.0f, 400.0f };
     std::vector<kd::Point2f> points;
     points.reserve ( n_ );
-
-    for ( int i = 0; i < n_; ++i ) {
+    for ( int i = 0; i < n_; ++i )
         points.emplace_back ( disx ( rng ), disy ( rng ) );
-    }
-
-    kd::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
-
-    bool rv = true;
-
+    kd::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
     for ( int i = 0; i < 100'000; ++i ) {
-        const kd::Point2f ptf { disx ( rng ), disy ( rng ) };
-        rv = rv and ( tree.nn_pointer ( ptf ) == nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) );
-        if ( not ( rv ) ) {
+        kd::Point2f const ptf{ disx ( rng ), disy ( rng ) }, kdt{ *tree.nn_pointer ( ptf ) },
+            ls{ *nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) };
+        if ( nn_distance_squared ( ptf, kdt ) != nn_distance_squared ( ptf, ls ) ) {
             std::cout << "fail\n";
-            exit ( 0 );
+            std::cout << "n = " << n_ << " point " << ptf << nl;
+            std::cout << "values " << kdt << " vs " << ls << nl;
+            std::cout << "dist " << nn_distance_squared ( ptf, kdt ) << " vs " << nn_distance_squared ( ptf, ls ) << nl;
+            std::cout << std::boolalpha << ( nn_distance_squared ( ptf, kdt ) == nn_distance_squared ( ptf, ls ) ) << nl;
+            return false;
         }
     }
-
-    return rv;
+    return true;
 }
 
-int wmain68461 ( ) {
-
-    sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
-    sax::uniform_int_distribution<int> dis { 16, 10'000 };
-
-    for ( int i = 0; i < 1'000; ++i ) {
-        std::cout << std::boolalpha << test ( dis ( rng ) ) << nl;
+int main ( ) {
+    std::exception_ptr eptr;
+    sax::Rng rng{ sax::fixed_seed ( ) };
+    sax::uniform_int_distribution<int> dis{ 16, 10'000 };
+    try {
+        for ( int i = 0; i < 1'000; ++i )
+            std::cout << i << ' ' << std::boolalpha << test ( dis ( rng ) ) << nl;
     }
-
+    catch ( ... ) {
+        eptr = std::current_exception ( ); // Capture.
+    }
+    handleEptr ( eptr );
     return EXIT_SUCCESS;
 }
+
+#if 0
 
 
 using namespace std;
@@ -387,12 +391,12 @@ int main8798797 ( ) {
 using PointArray = std::array<float, 2>;
 using PointToID = spatial::idle_point_multiset<2, PointArray>;
 
-[[ nodiscard ]] PointArray toArray ( const kd::Point2f & v_ ) noexcept {
+[[ nodiscard ]] PointArray toArray ( kd::Point2f const & v_ ) noexcept {
     return *reinterpret_cast<const PointArray*> ( &v_ );
 }
 
 [[ nodiscard ]] kd::Point2f fromArray ( const PointArray & p_ ) noexcept {
-    return *reinterpret_cast<const kd::Point2f*> ( &p_ );
+    return *reinterpret_cast<kd::Point2f const*> ( &p_ );
 }
 
 
@@ -410,7 +414,7 @@ struct KDTree {
         kd_free ( ptree );
     }
 
-    [[ nodiscard ]] kd::Point2f nn_pointer ( const kd::Point2f & pos_ ) const noexcept {
+    [[ nodiscard ]] kd::Point2f nn_pointer ( kd::Point2f const & pos_ ) const noexcept {
         kd::Point2f pos;
         struct kdres * res = kd_nearestf ( ptree, ( const float * ) & pos_ );
         kd_res_itemf ( res, ( float * ) & pos );
@@ -419,7 +423,7 @@ struct KDTree {
     }
 };
 
-int wmain77897897 ( ) {
+int main77897 ( ) {
 
     sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast<std::size_t> ( rdev ( ) ) << 32 ) | static_cast<std::size_t> ( rdev ( ) ); } ( ) };
     std::uniform_real_distribution<float> disy { 0.0f, 100.0f };
@@ -918,7 +922,7 @@ union tagged {
         else
             i &= not_one;
     }
-    explicit tagged ( const value_type & d_ ) noexcept :
+    explicit tagged ( value_type const & d_ ) noexcept :
         value { d_ } {
         i &= not_one;
     }
@@ -926,7 +930,7 @@ union tagged {
         value { std::move ( d_ ) } {
         i &= not_one;
     }
-    explicit tagged ( const value_type & d_, const bool tag_ ) noexcept :
+    explicit tagged ( value_type const & d_, const bool tag_ ) noexcept :
         value { d_ } {
         if ( tag_ )
             i |= one;
@@ -958,20 +962,20 @@ union tagged {
     [[ nodiscard ]] bool operator == ( const tagged & t_ ) const noexcept {
         return ( i >> 1 ) == ( t_.i >> 1 );
     }
-    [[ nodiscard ]] bool operator == ( const value_type & v_ ) const noexcept {
+    [[ nodiscard ]] bool operator == ( value_type const & v_ ) const noexcept {
         return *this == static_cast<tagged> ( v_ );
     }
     [[ nodiscard ]] bool operator != ( const tagged & t_ ) const noexcept {
         return ( i >> 1 ) != ( t_.i >> 1 );
     }
-    [[ nodiscard ]] bool operator != ( const value_type & v_ ) const noexcept {
+    [[ nodiscard ]] bool operator != ( value_type const & v_ ) const noexcept {
         return *this != static_cast< tagged > ( v_ );
     }
 
     [[ nodiscard ]] bool operator < ( const tagged & t_ ) const noexcept {
         return ( i & not_one ) < ( t_.i & not_one );
     }
-    [[ nodiscard ]] bool operator < ( const value_type & v_ ) const noexcept {
+    [[ nodiscard ]] bool operator < ( value_type const & v_ ) const noexcept {
         return *this < static_cast<tagged> ( v_ );
     }
 
@@ -982,10 +986,10 @@ union tagged {
         return static_cast<value_type> ( i & not_one ) + static_cast<value_type> ( t_.i & not_one );
     }
     /*
-    [[ nodiscard ]] value_type operator - ( const value_type & v_ ) const noexcept {
+    [[ nodiscard ]] value_type operator - ( value_type const & v_ ) const noexcept {
         return ( static_cast< tagged > ( static_cast<value_type> ( i & not_one ) - static_cast<value_type> ( static_cast<tagged> ( v_ ).i & not_one ) & not_one ).value;
     }
-    [[ nodiscard ]] value_type operator + ( const value_type & v_ ) const noexcept {
+    [[ nodiscard ]] value_type operator + ( value_type const & v_ ) const noexcept {
         return ( static_cast<tagged> ( static_cast<value_type> ( i & not_one ) + static_cast<value_type> ( static_cast<tagged> ( v_ ).i & not_one ) ) & not_one ).value;
     }
     */
@@ -1025,7 +1029,7 @@ struct TaggedPoint2 {
         x.value = std::move ( p_.x.value ); y = std::move ( p_.y );
         return * this;
     }
-    [[ maybe_unused ]] TaggedPoint2 & operator = ( const Point2<T> & p_ ) noexcept {
+    [[ maybe_unused ]] TaggedPoint2 & operator = ( Point2 const<T> & p_ ) noexcept {
         x.value = p_.x; y = p_.y;
         return *this;
     }
@@ -1107,7 +1111,7 @@ struct Tree2D {
     template<typename random_it>
     void kd_construct_xy ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
-        std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.x < b.x; } );
+        std::nth_element ( first_, median, last_, [ ] ( value_type const & a, value_type const & b ) { return a.x < b.x; } );
         *p_ = *median;
         if ( first_ != median ) {
             kd_construct_yx ( left ( p_ ), first_, median );
@@ -1121,7 +1125,7 @@ struct Tree2D {
     template<typename random_it>
     void kd_construct_yx ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
-        std::nth_element ( first_, median, last_, [ ] ( const value_type & a, const value_type & b ) { return a.y < b.y; } );
+        std::nth_element ( first_, median, last_, [ ] ( value_type const & a, value_type const & b ) { return a.y < b.y; } );
         *p_ = *median;
         if ( first_ != median ) {
             kd_construct_xy ( left ( p_ ), first_, median );
@@ -1173,7 +1177,7 @@ struct Tree2D {
     void nn_search_linear ( ) const noexcept {
         /*
         for ( auto && v : m_data ) {
-            const base_type d = distance_squared ( m_nearest.point, v );
+            auto const d = distance_squared ( m_nearest.point, v );
             if ( d < m_nearest.min_distance ) {
                 m_nearest.found = &v;
                 m_nearest.min_distance = d;
@@ -1217,7 +1221,7 @@ struct Tree2D {
     template<typename forward_it>
     Tree2D ( forward_it first_, forward_it last_ ) noexcept {
         if ( first_ < last_ ) {
-            const std::size_t n = std::distance ( first_, last_ );
+            std::size_t const n = std::distance ( first_, last_ );
             if ( n > m_linear_bound ) {
                 m_data.resize ( bin_tree_size<std::size_t> ( static_cast< std::size_t > ( n ) ), tagged_value_type { std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
                 m_dim = get_dimensions_order ( first_, last_ );
@@ -1237,7 +1241,7 @@ struct Tree2D {
     Tree2D & operator = ( const Tree2D & ) = delete;
     Tree2D & operator = ( Tree2D && ) noexcept = delete;
 
-    [[ nodiscard ]] const_pointer nn_ptr ( const value_type & point_ ) const noexcept {
+    [[ nodiscard ]] const_pointer nn_ptr ( value_type const & point_ ) const noexcept {
         m_nearest = { point_, nullptr, std::numeric_limits<base_type>::max ( ) };
         switch ( m_dim ) {
         case 0: nn_search_xy ( m_data.data ( ) ); break;
@@ -1247,11 +1251,11 @@ struct Tree2D {
         return m_nearest.found;
     }
 
-    [[ nodiscard ]] std::ptrdiff_t nn_idx ( const value_type & point_ ) const noexcept {
+    [[ nodiscard ]] std::ptrdiff_t nn_idx ( value_type const & point_ ) const noexcept {
         return nn_ptr ( point_ ) - m_data.data ( );
     }
 
-    [[ nodiscard ]] value_type nn_pointer ( const value_type & point_ ) const noexcept {
+    [[ nodiscard ]] value_type nn_pointer ( value_type const & point_ ) const noexcept {
         auto [ x, y ] { *nn_ptr ( point_ ) };
         return { std::move ( x.value ), std::move ( y ) };
     }
@@ -1287,7 +1291,7 @@ struct Tree2D {
     }
 };
 
-bool test2 ( const int n_ ) noexcept {
+bool test2 ( int const n_ ) noexcept {
 
     sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
 
@@ -1306,7 +1310,7 @@ bool test2 ( const int n_ ) noexcept {
     bool rv = true;
 
     for ( int i = 0; i < 100'000; ++i ) {
-        const Point2<float> ptf { disx ( rng ), disy ( rng ) };
+        Point2<float> const ptf { disx ( rng ), disy ( rng ) };
         auto p1 = tree.nn_pointer ( ptf );
         auto p2 = nn_search_linear ( std::begin ( points ), std::end ( points ), ptf );
         std::cout << p1 << p2 << nl;
@@ -1350,12 +1354,9 @@ int wmain ( ) {
     return EXIT_SUCCESS;
 }
 
+#    include "kdtree2.hpp"
 
-
-
-#include "kdtree2.hpp"
-
-#include <boost/multi_array.hpp>
+#    include <boost/multi_array.hpp>
 
 sax::splitmix64 rng { [ ] ( ) { std::random_device rdev; return ( static_cast< std::size_t > ( rdev ( ) ) << 32 ) | static_cast< std::size_t > ( rdev ( ) ); } ( ) };
 std::uniform_real_distribution<float> disy { 0.0f, 100'000.0f };
@@ -1369,7 +1370,7 @@ typedef boost::multi_array<float, 2> array2dfloat;
 
 double time_a_search ( kdtree2::KDTree* tree, int nsearch ) {
 
-    const int dim = tree->dim;
+    int const dim = tree->dim;
     std::vector<float> query ( dim );
     kdtree2::KDTreeResultVector result;
 
@@ -1492,8 +1493,7 @@ int main684984 ( ) {
     return EXIT_SUCCESS;
 }
 
-
-#include <queue>
+#    include <queue>
 
 template<typename Point>
 struct PQType {
@@ -1506,7 +1506,7 @@ struct PQType {
     PQType ( ) noexcept = default;
     PQType ( const PQType & ) noexcept = default;
     PQType ( PQType && ) noexcept = default;
-    PQType ( const base_type & value_, const Point & p_ ) noexcept :
+    PQType ( auto const & value_, const Point & p_ ) noexcept :
         value { value_ }, point { p_ } {
     }
     PQType ( base_type && value_, Point && p_ ) noexcept :
@@ -1527,7 +1527,7 @@ struct PQType {
     }
 };
 
-#include "sorted_vector_set.hpp"
+#    include "sorted_vector_set.hpp"
 
 
 template<typename Point>
@@ -1552,7 +1552,7 @@ struct KNearest : public sorted_vector_set<PQType<Point>> {
 
     using base_type = typename value_type::base_type;
 
-    KNearest ( const std::size_t s_ ) : base::sorted_vector_set ( s_ ) { }
+    KNearest ( std::size_t const s_ ) : base::sorted_vector_set ( s_ ) { }
 
     template<typename ... Args>
     void emplace ( base_type && value_, Args && ... args_ ) noexcept {

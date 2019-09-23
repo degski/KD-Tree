@@ -91,7 +91,7 @@ public:
   // Also, the user must deallocate the memory underlying it.
 
 
-  const int N;   // number of data points
+  int const N;   // number of data points
   int dim; //
   bool sort_results;  // USERS set to 'true'. 
   const bool rearrange; // are we rearranging? 
@@ -159,7 +159,7 @@ private:
   // if rearrange is true then this is the rearranged data storage. 
 
 
-  static const int bucketsize = 12;  // global constant. 
+  static int const bucketsize = 12;  // global constant. 
 
 private:
   void set_data(KDTreeArray& din); 
