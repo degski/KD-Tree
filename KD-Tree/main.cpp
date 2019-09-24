@@ -112,6 +112,9 @@ struct Point2 {
     Point2 ( Point2 && ) noexcept      = default;
     Point2 ( value_type && x_, value_type && y_ ) noexcept : x{ std::move ( x_ ) }, y{ std::move ( y_ ) } {}
 
+    template<typename SfmlVec>
+    Point2 ( SfmlVec && v_ ) noexcept : x{ std::move ( v_.x ) }, y{ std::move ( v_.y ) } {}
+
     [[maybe_unused]] Point2 & operator= ( Point2 const & ) noexcept = default;
     [[maybe_unused]] Point2 & operator= ( Point2 && ) noexcept = default;
 
@@ -196,8 +199,13 @@ int main ( ) {
     sax::Rng rng{ sax::fixed_seed ( ) };
     sax::uniform_int_distribution<int> dis{ 10, 1'000'000 };
     try {
-        for ( int i = 0; i < 100'000; ++i )
-            std::cout << i << ' ' << std::boolalpha << test ( dis ( rng ) ) << nl;
+        bool r = true;
+        plf::nanotimer timer;
+        timer.start ( );
+        for ( int i = 0; i < 10; ++i )
+            r = r and test ( dis ( rng ) );
+        std::uint64_t duration = timer.get_elapsed_ms ( );
+        std::cout << duration << ' ' << r << nl;
     }
     catch ( ... ) {
         eptr = std::current_exception ( ); // Capture.

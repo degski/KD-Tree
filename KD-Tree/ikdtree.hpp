@@ -130,6 +130,9 @@ struct Point2 {
     Point2 ( Point2 && ) noexcept      = default;
     Point2 ( value_type && x_, value_type && y_ ) noexcept : x{ std::move ( x_ ) }, y{ std::move ( y_ ) } {}
 
+    template<typename SfmlVec>
+    Point2 ( SfmlVec && v_ ) noexcept : x{ std::move ( v_.x ) }, y{ std::move ( v_.y ) } {}
+
     [[maybe_unused]] Point2 & operator= ( Point2 const & ) noexcept = default;
     [[maybe_unused]] Point2 & operator= ( Point2 && ) noexcept = default;
 
@@ -170,6 +173,9 @@ struct Point3 {
     Point3 ( value_type && x_, value_type && y_, value_type && z_ ) noexcept :
         x{ std::move ( x_ ) }, y{ std::move ( y_ ) }, z{ std::move ( z_ ) } {}
 
+    template<typename SfmlVec>
+    Point3 ( SfmlVec && v_ ) noexcept : x{ std::move ( v_.x ) }, y{ std::move ( v_.y ) }, z{ std::move ( v_.z ) } {}
+
     [[maybe_unused]] Point3 & operator= ( Point3 const & ) noexcept = default;
     [[maybe_unused]] Point3 & operator= ( Point3 && ) noexcept = default;
 
@@ -208,7 +214,7 @@ using Point3d = Point3<double>;
 struct vector_tag_t {};
 struct array_tag_t {};
 
-// Implicit KD full binary tree of dimension 2, P can be substituted by sf::Vector2<>.
+// Implicit KD full binary tree of dimension 2.
 template<typename T, typename P = Point2<T>, typename Type = vector_tag_t, std::size_t N = 0>
 struct Tree2D {
 
@@ -309,9 +315,9 @@ struct Tree2D {
         }
     }
 
-    void nn_search_linear ( ) const noexcept {
-        for ( auto && v : m_data ) {
-            const dist_type d = distance_squared ( m_to, v );
+    void nn_search_linear ( const_pointer const ) const noexcept {
+        for ( auto const & v : m_data ) {
+            auto const d = distance_squared ( m_to, v );
             if ( d < m_min_distance_squared ) {
                 m_point                = &v;
                 m_min_distance_squared = d;
@@ -322,15 +328,16 @@ struct Tree2D {
     container m_data;
     const_pointer m_leaf_start    = nullptr;
     mutable const_pointer m_point = nullptr; // Mutable types are class global result types.
-    std::size_t m_dim;
     mutable value_type m_to;
     mutable dist_type m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
+
+    void ( Tree2D::*nn_search ) ( const_pointer const ) const noexcept;
 
     public:
     Tree2D ( ) noexcept {}
     Tree2D ( Tree2D const & ) = delete;
     Tree2D ( Tree2D && rhs_ ) noexcept :
-        m_data{ std::move ( rhs_.m_data ) }, m_leaf_start{ rhs_.m_leaf_start }, m_dim{ rhs_.m_dim } {}
+        m_data{ std::move ( rhs_.m_data ) }, m_leaf_start{ rhs_.m_leaf_start }, nn_search{ rhs_.nn_search } {}
 
     Tree2D ( std::initializer_list<value_type> il_ ) noexcept {
         if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
@@ -345,13 +352,18 @@ struct Tree2D {
                     m_data.resize ( capacity<std::size_t> ( il_.size ( ) ) );
                 }
                 m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
-                m_dim        = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
                 container points;
                 points.reserve ( il_.size ( ) );
                 std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( points ) );
-                switch ( m_dim ) {
-                    case 0: kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
-                    case 1: kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) ); break;
+                switch ( get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) ) ) {
+                    case 0:
+                        kd_construct_xy ( m_data.data ( ), std::begin ( points ), std::end ( points ) );
+                        nn_search = &Tree2D::nn_search_xy;
+                        break;
+                    case 1:
+                        kd_construct_yx ( m_data.data ( ), std::begin ( points ), std::end ( points ) );
+                        nn_search = &Tree2D::nn_search_yx;
+                        break;
                 }
             }
             else {
@@ -362,7 +374,7 @@ struct Tree2D {
                     m_data.reserve ( il_.size ( ) );
                     std::copy ( std::begin ( il_ ), std::end ( il_ ), std::back_inserter ( m_data ) );
                 }
-                m_dim = 2u;
+                nn_search = &Tree2D::nn_search_linear;
             }
         }
     }
@@ -404,7 +416,7 @@ struct Tree2D {
     Tree2D & operator                     = ( Tree2D && rhs_ ) noexcept {
         m_data       = std::move ( rhs_.m_data );
         m_leaf_start = rhs_.m_leaf_start;
-        m_dim        = rhs_.m_dim;
+        nn_search    = rhs_.nn_search;
         return *this;
     }
 
@@ -432,10 +444,15 @@ struct Tree2D {
                     m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ) );
                 }
                 m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
-                m_dim        = get_dimensions_order ( first_, last_ );
-                switch ( m_dim ) {
-                    case 0: kd_construct_xy ( m_data.data ( ), first_, last_ ); break;
-                    case 1: kd_construct_yx ( m_data.data ( ), first_, last_ ); break;
+                switch ( get_dimensions_order ( first_, last_ ) ) {
+                    case 0:
+                        kd_construct_xy ( m_data.data ( ), first_, last_ );
+                        nn_search = &Tree2D::nn_search_xy;
+                        break;
+                    case 1:
+                        kd_construct_yx ( m_data.data ( ), first_, last_ );
+                        nn_search = &Tree2D::nn_search_yx;
+                        break;
                 }
             }
             else {
@@ -446,7 +463,7 @@ struct Tree2D {
                     m_data.reserve ( n );
                     std::copy ( first_, last_, std::back_inserter ( m_data ) );
                 }
-                m_dim = 2u;
+                nn_search = &Tree2D::nn_search_linear;
             }
         }
     }
@@ -454,11 +471,7 @@ struct Tree2D {
     [[nodiscard]] const_pointer nn_pointer ( value_type const & point_ ) const noexcept {
         m_to                   = point_;
         m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
-        switch ( m_dim ) {
-            case 0: nn_search_xy ( m_data.data ( ) ); break;
-            case 1: nn_search_yx ( m_data.data ( ) ); break;
-            case 2: nn_search_linear ( ); break;
-        }
+        ( this->*nn_search ) ( m_data.data ( ) );
         return m_point;
     }
     [[nodiscard]] sax::pair<const_pointer, base_type> nn_pointer_distance ( value_type const & point_ ) const noexcept {
@@ -499,7 +512,7 @@ struct Tree2D {
     }
 };
 
-// Implicit KD full binary tree of dimension 3, P can be substituted by sf::Vector3<>.
+// Implicit KD full binary tree of dimension 3.
 template<typename T, typename P = Point3<T>, typename Type = vector_tag_t, std::size_t N = 0>
 struct Tree3D {
 
@@ -758,7 +771,8 @@ struct Tree3D {
     public:
     Tree3D ( ) noexcept {}
     Tree3D ( Tree3D const & ) = delete;
-    Tree3D ( Tree3D && rhs_ ) noexcept : m_data{ std::move ( rhs_.m_data ) }, m_leaf_start{ rhs_.m_leaf_start } {}
+    Tree3D ( Tree3D && rhs_ ) noexcept :
+        m_data{ std::move ( rhs_.m_data ) }, m_leaf_start{ rhs_.m_leaf_start }, nn_search{ rhs_.nn_search } {}
 
     Tree3D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
@@ -840,6 +854,7 @@ struct Tree3D {
     Tree3D & operator                     = ( Tree3D && rhs_ ) noexcept {
         m_data       = std::move ( rhs_.m_data );
         m_leaf_start = rhs_.m_leaf_start;
+        nn_search    = rhs_.nn_search;
         return *this;
     }
 
