@@ -125,7 +125,7 @@ struct Point2 {
 
     value_type x, y;
 
-    Point2 ( ) noexcept                = default;
+    Point2 ( ) noexcept : x{ std::numeric_limits<value_type>::quiet_NaN ( ) } {};
     Point2 ( Point2 const & ) noexcept = default;
     Point2 ( Point2 && ) noexcept      = default;
     Point2 ( value_type && x_, value_type && y_ ) noexcept : x{ std::move ( x_ ) }, y{ std::move ( y_ ) } {}
@@ -149,7 +149,7 @@ struct Point2 {
 
     template<typename Stream>
     [[maybe_unused]] friend Stream & operator<< ( Stream & out_, Point2 const & p_ ) noexcept {
-        if ( Point2{ std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ) } != p_ )
+        if ( std::numeric_limits<value_type>::quiet_NaN ( ) != p_.x )
             out_ << '<' << p_.x << ' ' << p_.y << '>';
         else
             out_ << "<* *>";
@@ -164,7 +164,7 @@ struct Point3 {
 
     value_type x, y, z;
 
-    Point3 ( ) noexcept                = default;
+    Point3 ( ) noexcept : x{ std::numeric_limits<value_type>::quiet_NaN ( ) } {};
     Point3 ( Point3 const & ) noexcept = default;
     Point3 ( Point3 && ) noexcept      = default;
     Point3 ( value_type && x_, value_type && y_, value_type && z_ ) noexcept :
@@ -191,8 +191,7 @@ struct Point3 {
 
     template<typename Stream>
     [[maybe_unused]] friend Stream & operator<< ( Stream & out_, Point3 const & p_ ) noexcept {
-        if ( Point3{ std::numeric_limits<value_type>::max ( ), std::numeric_limits<value_type>::max ( ),
-                     std::numeric_limits<value_type>::max ( ) } != p_ )
+        if ( std::numeric_limits<value_type>::quiet_NaN ( ) != p_.x )
             out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
         else
             out_ << "<* * *>";
@@ -245,7 +244,7 @@ struct Tree2D {
     [[nodiscard]] const_pointer right ( const_pointer const p_ ) const noexcept { return ( p_ + 2 ) + ( p_ - m_data.data ( ) ); }
 
     [[nodiscard]] bool is_leaf ( const_pointer const p_ ) const noexcept {
-        return ( m_leaf_start < p_ ) or ( std::numeric_limits<base_type>::max ( ) == left ( p_ )->x );
+        return m_leaf_start < p_ or std::isnan ( left ( p_ )->x );
     }
 
     template<typename random_it>
@@ -273,39 +272,39 @@ struct Tree2D {
 
     void nn_search_xy ( const_pointer const p_ ) const noexcept {
         dist_type d = Tree2D::distance_squared ( *p_, m_to );
-        if ( d < m_min_distance_sqr ) {
-            m_min_distance_sqr = d;
-            m_point        = p_;
+        if ( d < m_min_distance_squared ) {
+            m_min_distance_squared = d;
+            m_point                = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->x - m_to.x ) > dist_type{ 0 } ) {
             nn_search_yx ( left ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_yx ( right ( p_ ) );
         }
         else {
             nn_search_yx ( right ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_yx ( left ( p_ ) );
         }
     }
     void nn_search_yx ( const_pointer const p_ ) const noexcept {
         dist_type d = Tree2D::distance_squared ( *p_, m_to );
-        if ( d < m_min_distance_sqr ) {
-            m_min_distance_sqr = d;
-            m_point        = p_;
+        if ( d < m_min_distance_squared ) {
+            m_min_distance_squared = d;
+            m_point                = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->y - m_to.y ) > dist_type{ 0 } ) {
             nn_search_xy ( left ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_xy ( right ( p_ ) );
         }
         else {
             nn_search_xy ( right ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_xy ( left ( p_ ) );
         }
     }
@@ -313,9 +312,9 @@ struct Tree2D {
     void nn_search_linear ( ) const noexcept {
         for ( auto && v : m_data ) {
             const dist_type d = distance_squared ( m_to, v );
-            if ( d < m_min_distance_sqr ) {
-                m_point        = &v;
-                m_min_distance_sqr = d;
+            if ( d < m_min_distance_squared ) {
+                m_point                = &v;
+                m_min_distance_squared = d;
             }
         }
     }
@@ -325,8 +324,7 @@ struct Tree2D {
     mutable const_pointer m_point = nullptr; // Mutable types are class global result types.
     std::size_t m_dim;
     mutable value_type m_to;
-    // Distance squared.
-    mutable dist_type m_min_distance_sqr = std::numeric_limits<dist_type>::max ( );
+    mutable dist_type m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
 
     public:
     Tree2D ( ) noexcept {}
@@ -341,12 +339,10 @@ struct Tree2D {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > detail::linear_bound ) {
                 if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
-                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
-                                value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ), value_type{} );
                 }
                 else {
-                    m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type{ std::numeric_limits<base_type>::max ( ),
-                                                                                        std::numeric_limits<base_type>::max ( ) } );
+                    m_data.resize ( capacity<std::size_t> ( il_.size ( ) ) );
                 }
                 m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                 m_dim        = get_dimensions_order ( std::begin ( il_ ), std::end ( il_ ) );
@@ -396,19 +392,13 @@ struct Tree2D {
 
     [[nodiscard]] const_reference root ( ) const noexcept { return m_data.front ( ); }
 
-    [[nodiscard]] bool is_valid ( iterator it_ ) noexcept { return it_->x != std::numeric_limits<base_type>::max ( ); }
-    [[nodiscard]] bool is_valid ( const_iterator it_ ) const noexcept { return it_->x != std::numeric_limits<base_type>::max ( ); }
-    [[nodiscard]] bool is_not_valid ( iterator it_ ) noexcept { return it_->x == std::numeric_limits<base_type>::max ( ); }
-    [[nodiscard]] bool is_not_valid ( const_iterator it_ ) const noexcept {
-        return it_->x == std::numeric_limits<base_type>::max ( );
-    }
+    [[nodiscard]] bool is_valid ( iterator it_ ) noexcept { return not std::isnan ( it_->x ); }
+    [[nodiscard]] bool is_valid ( const_iterator it_ ) const noexcept { return not std::isnan ( it_->x ); }
+    [[nodiscard]] bool is_not_valid ( iterator it_ ) noexcept { return std::isnan ( it_->x ); }
+    [[nodiscard]] bool is_not_valid ( const_iterator it_ ) const noexcept { return std::isnan ( it_->x ); }
 
-    [[nodiscard]] static bool is_valid ( const_reference value_type_ ) noexcept {
-        return value_type_.x != std::numeric_limits<base_type>::max ( );
-    }
-    [[nodiscard]] static bool is_not_valid ( const_reference value_type_ ) noexcept {
-        return value_type_.x == std::numeric_limits<base_type>::max ( );
-    }
+    [[nodiscard]] static bool is_valid ( const_reference value_type_ ) noexcept { return not std::isnan ( value_type_.x ); }
+    [[nodiscard]] static bool is_not_valid ( const_reference value_type_ ) noexcept { return std::isnan ( value_type_.x ); }
 
     Tree2D & operator= ( Tree2D const & ) = delete;
     Tree2D & operator                     = ( Tree2D && rhs_ ) noexcept {
@@ -436,13 +426,10 @@ struct Tree2D {
             auto const n = std::distance ( first_, last_ );
             if ( n > detail::linear_bound ) {
                 if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
-                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
-                                value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ), value_type{} );
                 }
                 else {
-                    m_data.resize (
-                        capacity<std::size_t> ( static_cast<std::size_t> ( n ) ),
-                        value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                    m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ) );
                 }
                 m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                 m_dim        = get_dimensions_order ( first_, last_ );
@@ -465,8 +452,8 @@ struct Tree2D {
     }
 
     [[nodiscard]] const_pointer nn_pointer ( value_type const & point_ ) const noexcept {
-        m_to           = point_;
-        m_min_distance_sqr = std::numeric_limits<dist_type>::max ( );
+        m_to                   = point_;
+        m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
         switch ( m_dim ) {
             case 0: nn_search_xy ( m_data.data ( ) ); break;
             case 1: nn_search_yx ( m_data.data ( ) ); break;
@@ -475,19 +462,19 @@ struct Tree2D {
         return m_point;
     }
     [[nodiscard]] sax::pair<const_pointer, base_type> nn_pointer_distance ( value_type const & point_ ) const noexcept {
-        return { nn_pointer ( point_ ), static_cast<base_type> ( m_min_distance_sqr ) };
+        return { nn_pointer ( point_ ), static_cast<base_type> ( m_min_distance_squared ) };
     }
 
     [[nodiscard]] std::ptrdiff_t nn_index ( value_type const & point_ ) const noexcept {
         return nn_pointer ( point_ ) - m_data.data ( );
     }
     [[nodiscard]] sax::pair<std::ptrdiff_t, base_type> nn_index_distance ( value_type const & point_ ) const noexcept {
-        return { nn_index ( point_ ), static_cast<base_type> ( m_min_distance_sqr ) };
+        return { nn_index ( point_ ), static_cast<base_type> ( m_min_distance_squared ) };
     }
 
     [[nodiscard]] base_type nn_distance ( value_type const & point_ ) const noexcept {
-        assert ( m_min_distance_sqr != std::numeric_limits<dist_type>::max ( ) );
-        return static_cast<base_type> ( m_min_distance_sqr );
+        assert ( m_min_distance_squared != std::numeric_limits<dist_type>::max ( ) );
+        return static_cast<base_type> ( m_min_distance_squared );
     }
 
     [[nodiscard]] static constexpr dist_type distance_squared ( value_type const & p1_, value_type const & p2_ ) noexcept {
@@ -499,9 +486,8 @@ struct Tree2D {
 
     template<typename Stream>
     [[maybe_unused]] friend Stream & operator<< ( Stream & out_, Tree2D const & tree_ ) noexcept {
-        for ( auto const & p : tree_.m_data ) {
+        for ( auto const & p : tree_.m_data )
             out_ << p;
-        }
         return out_;
     }
 
@@ -564,7 +550,7 @@ struct Tree3D {
     [[nodiscard]] const_pointer right ( const_pointer const p_ ) const noexcept { return ( p_ + 2 ) + ( p_ - m_data.data ( ) ); }
 
     [[nodiscard]] bool is_leaf ( const_pointer const p_ ) const noexcept {
-        return ( m_leaf_start < p_ ) or ( std::numeric_limits<base_type>::max ( ) == left ( p_ )->x );
+        return m_leaf_start < p_ or std::isnan ( left ( p_ )->x );
     }
 
     template<typename random_it>
@@ -637,116 +623,116 @@ struct Tree3D {
 
     void nn_search_xy ( const_pointer const p_ ) const noexcept {
         base_type d = Tree3D::distance_squared ( *p_, m_to );
-        if ( d < m_min_distance_sqr ) {
-            m_min_distance_sqr = d;
-            m_point        = p_;
+        if ( d < m_min_distance_squared ) {
+            m_min_distance_squared = d;
+            m_point                = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->x - m_to.x ) > base_type{ 0 } ) {
             nn_search_yz ( left ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_yz ( right ( p_ ) );
         }
         else {
             nn_search_yz ( right ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_yz ( left ( p_ ) );
         }
     }
     void nn_search_yz ( const_pointer const p_ ) const noexcept {
         base_type d = Tree3D::distance_squared ( *p_, m_to );
-        if ( d < m_min_distance_sqr ) {
-            m_min_distance_sqr = d;
-            m_point        = p_;
+        if ( d < m_min_distance_squared ) {
+            m_min_distance_squared = d;
+            m_point                = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->y - m_to.y ) > base_type{ 0 } ) {
             nn_search_zx ( left ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_zx ( right ( p_ ) );
         }
         else {
             nn_search_zx ( right ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_zx ( left ( p_ ) );
         }
     }
     void nn_search_zx ( const_pointer const p_ ) const noexcept {
         base_type d = Tree3D::distance_squared ( *p_, m_to );
-        if ( d < m_min_distance_sqr ) {
-            m_min_distance_sqr = d;
-            m_point        = p_;
+        if ( d < m_min_distance_squared ) {
+            m_min_distance_squared = d;
+            m_point                = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->z - m_to.z ) > base_type{ 0 } ) {
             nn_search_xy ( left ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_xy ( right ( p_ ) );
         }
         else {
             nn_search_xy ( right ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_xy ( left ( p_ ) );
         }
     }
 
     void nn_search_xz ( const_pointer const p_ ) const noexcept {
         base_type d = Tree3D::distance_squared ( *p_, m_to );
-        if ( d < m_min_distance_sqr ) {
-            m_min_distance_sqr = d;
-            m_point        = p_;
+        if ( d < m_min_distance_squared ) {
+            m_min_distance_squared = d;
+            m_point                = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->x - m_to.x ) > base_type{ 0 } ) {
             nn_search_zy ( left ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_zy ( right ( p_ ) );
         }
         else {
             nn_search_zy ( right ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_zy ( left ( p_ ) );
         }
     }
     void nn_search_yx ( const_pointer const p_ ) const noexcept {
         base_type d = Tree3D::distance_squared ( *p_, m_to );
-        if ( d < m_min_distance_sqr ) {
-            m_min_distance_sqr = d;
-            m_point        = p_;
+        if ( d < m_min_distance_squared ) {
+            m_min_distance_squared = d;
+            m_point                = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->y - m_to.y ) > base_type{ 0 } ) {
             nn_search_xz ( left ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_xz ( right ( p_ ) );
         }
         else {
             nn_search_xz ( right ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_xz ( left ( p_ ) );
         }
     }
     void nn_search_zy ( const_pointer const p_ ) const noexcept {
         base_type d = Tree3D::distance_squared ( *p_, m_to );
-        if ( d < m_min_distance_sqr ) {
-            m_min_distance_sqr = d;
-            m_point        = p_;
+        if ( d < m_min_distance_squared ) {
+            m_min_distance_squared = d;
+            m_point                = p_;
         }
         if ( is_leaf ( p_ ) )
             return;
         if ( ( d = p_->z - m_to.z ) > base_type{ 0 } ) {
             nn_search_yx ( left ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_yx ( right ( p_ ) );
         }
         else {
             nn_search_yx ( right ( p_ ) );
-            if ( ( ( d * d ) < m_min_distance_sqr ) )
+            if ( ( ( d * d ) < m_min_distance_squared ) )
                 nn_search_yx ( left ( p_ ) );
         }
     }
@@ -754,9 +740,9 @@ struct Tree3D {
     void nn_search_linear ( const_pointer const ) const noexcept {
         for ( auto const & v : m_data ) {
             auto const d = distance_squared ( m_to, v );
-            if ( d < m_min_distance_sqr ) {
-                m_point        = &v;
-                m_min_distance_sqr = d;
+            if ( d < m_min_distance_squared ) {
+                m_point                = &v;
+                m_min_distance_squared = d;
             }
         }
     }
@@ -765,26 +751,23 @@ struct Tree3D {
     const_pointer m_leaf_start    = nullptr;
     mutable const_pointer m_point = nullptr; // Mutable types are class global result types.
     mutable value_type m_to;
-    mutable dist_type m_min_distance_sqr = std::numeric_limits<dist_type>::max ( );
+    mutable dist_type m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
 
     void ( Tree3D::*nn_search ) ( const_pointer const ) const noexcept;
 
     public:
     Tree3D ( ) noexcept {}
     Tree3D ( Tree3D const & ) = delete;
-    Tree3D ( Tree3D && rhs_ ) noexcept :
-        m_data{ std::move ( rhs_.m_data ) }, m_leaf_start{ rhs_.m_leaf_start } {}
+    Tree3D ( Tree3D && rhs_ ) noexcept : m_data{ std::move ( rhs_.m_data ) }, m_leaf_start{ rhs_.m_leaf_start } {}
 
     Tree3D ( std::initializer_list<value_type> il_ ) noexcept {
         if ( il_.size ( ) ) {
             if ( il_.size ( ) > detail::linear_bound ) {
                 if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
-                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
-                                value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ), value_type{} );
                 }
                 else {
-                    m_data.resize ( capacity<std::size_t> ( il_.size ( ) ), value_type{ std::numeric_limits<base_type>::max ( ),
-                                                                                        std::numeric_limits<base_type>::max ( ) } );
+                    m_data.resize ( capacity<std::size_t> ( il_.size ( ) ) );
                 }
                 m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                 container points;
@@ -845,19 +828,13 @@ struct Tree3D {
 
     [[nodiscard]] const_reference root ( ) const noexcept { return m_data.front ( ); }
 
-    [[nodiscard]] bool is_valid ( iterator it_ ) noexcept { return it_->x != std::numeric_limits<base_type>::max ( ); }
-    [[nodiscard]] bool is_valid ( const_iterator it_ ) const noexcept { return it_->x != std::numeric_limits<base_type>::max ( ); }
-    [[nodiscard]] bool is_not_valid ( iterator it_ ) noexcept { return it_->x == std::numeric_limits<base_type>::max ( ); }
-    [[nodiscard]] bool is_not_valid ( const_iterator it_ ) const noexcept {
-        return it_->x == std::numeric_limits<base_type>::max ( );
-    }
+    [[nodiscard]] bool is_valid ( iterator it_ ) noexcept { return not std::isnan ( it_->x ); }
+    [[nodiscard]] bool is_valid ( const_iterator it_ ) const noexcept { return not std::isnan ( it_->x ); }
+    [[nodiscard]] bool is_not_valid ( iterator it_ ) noexcept { return std::isnan ( it_->x ); }
+    [[nodiscard]] bool is_not_valid ( const_iterator it_ ) const noexcept { return std::isnan ( it_->x ); }
 
-    [[nodiscard]] static bool is_valid ( const_reference value_type_ ) noexcept {
-        return value_type_.x != std::numeric_limits<base_type>::max ( );
-    }
-    [[nodiscard]] static bool is_not_valid ( const_reference value_type_ ) noexcept {
-        return value_type_.x == std::numeric_limits<base_type>::max ( );
-    }
+    [[nodiscard]] static bool is_valid ( const_reference value_type_ ) noexcept { return not std::isnan ( value_type_.x ); }
+    [[nodiscard]] static bool is_not_valid ( const_reference value_type_ ) noexcept { return std::isnan ( value_type_.x ); }
 
     Tree3D & operator= ( Tree3D const & ) = delete;
     Tree3D & operator                     = ( Tree3D && rhs_ ) noexcept {
@@ -881,13 +858,10 @@ struct Tree3D {
             auto const n = std::distance ( first_, last_ );
             if ( n > detail::linear_bound ) {
                 if constexpr ( std::is_same_v<container_type, array_tag_t> ) {
-                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
-                                value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                    std::fill ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ), value_type{} );
                 }
                 else {
-                    m_data.resize (
-                        capacity<std::size_t> ( static_cast<std::size_t> ( n ) ),
-                        value_type{ std::numeric_limits<base_type>::max ( ), std::numeric_limits<base_type>::max ( ) } );
+                    m_data.resize ( capacity<std::size_t> ( static_cast<std::size_t> ( n ) ) );
                 }
                 m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                 switch ( get_dimensions_order ( first_, last_ ) ) {
@@ -931,25 +905,25 @@ struct Tree3D {
     }
 
     [[nodiscard]] const_pointer nn_pointer ( value_type const & point_ ) const noexcept {
-        m_to           = point_;
-        m_min_distance_sqr = std::numeric_limits<dist_type>::max ( );
+        m_to                   = point_;
+        m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
         ( this->*nn_search ) ( m_data.data ( ) );
         return m_point;
     }
     [[nodiscard]] sax::pair<const_pointer, base_type> nn_pointer_distance ( value_type const & point_ ) const noexcept {
-        return { nn_pointer ( point_ ), static_cast<base_type> ( m_min_distance_sqr ) };
+        return { nn_pointer ( point_ ), static_cast<base_type> ( m_min_distance_squared ) };
     }
 
     [[nodiscard]] std::ptrdiff_t nn_index ( value_type const & point_ ) const noexcept {
         return nn_pointer ( point_ ) - m_data.data ( );
     }
     [[nodiscard]] sax::pair<std::ptrdiff_t, base_type> nn_index_distance ( value_type const & point_ ) const noexcept {
-        return { nn_index ( point_ ), static_cast<base_type> ( m_min_distance_sqr ) };
+        return { nn_index ( point_ ), static_cast<base_type> ( m_min_distance_squared ) };
     }
 
     [[nodiscard]] base_type nn_distance ( value_type const & point_ ) const noexcept {
-        assert ( m_min_distance_sqr != std::numeric_limits<dist_type>::max ( ) );
-        return static_cast<base_type> ( m_min_distance_sqr );
+        assert ( m_min_distance_squared != std::numeric_limits<dist_type>::max ( ) );
+        return static_cast<base_type> ( m_min_distance_squared );
     }
 
     [[nodiscard]] static constexpr base_type distance_squared ( value_type const & p1_, value_type const & p2_ ) noexcept {
@@ -959,9 +933,8 @@ struct Tree3D {
 
     template<typename Stream>
     [[maybe_unused]] friend Stream & operator<< ( Stream & out_, Tree3D const & tree_ ) noexcept {
-        for ( auto const & p : tree_.m_data ) {
+        for ( auto const & p : tree_.m_data )
             out_ << p;
-        }
         return out_;
     }
 

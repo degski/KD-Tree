@@ -107,7 +107,7 @@ struct Point2 {
 
     value_type x, y;
 
-    Point2 ( ) noexcept                = default;
+    Point2 ( ) noexcept : x{ std::numeric_limits<value_type>::quiet_NaN ( ) } {};
     Point2 ( Point2 const & ) noexcept = default;
     Point2 ( Point2 && ) noexcept      = default;
     Point2 ( value_type && x_, value_type && y_ ) noexcept : x{ std::move ( x_ ) }, y{ std::move ( y_ ) } {}
