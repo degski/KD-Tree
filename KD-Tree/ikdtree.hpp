@@ -326,12 +326,13 @@ struct Tree2D {
     }
 
     container m_data;
-    const_pointer m_leaf_start    = nullptr;
-    mutable const_pointer m_point = nullptr; // Mutable types are class global result types.
+    const_pointer m_leaf_start = nullptr;
+    void ( Tree2D::*nn_search ) ( const_pointer const ) const noexcept;
+
+    // These mutable types are class global result types.
+    mutable const_pointer m_point = nullptr;
     mutable value_type m_to;
     mutable dist_type m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
-
-    void ( Tree2D::*nn_search ) ( const_pointer const ) const noexcept;
 
     public:
     Tree2D ( ) noexcept {}
@@ -761,12 +762,13 @@ struct Tree3D {
     }
 
     container m_data;
-    const_pointer m_leaf_start    = nullptr;
-    mutable const_pointer m_point = nullptr; // Mutable types are class global result types.
+    const_pointer m_leaf_start = nullptr;
+    void ( Tree3D::*nn_search ) ( const_pointer const ) const noexcept;
+
+    // These mutable types are class global result types.
+    mutable const_pointer m_point = nullptr;
     mutable value_type m_to;
     mutable dist_type m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
-
-    void ( Tree3D::*nn_search ) ( const_pointer const ) const noexcept;
 
     public:
     Tree3D ( ) noexcept {}
