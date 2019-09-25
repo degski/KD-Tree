@@ -62,9 +62,17 @@ namespace fs = std::filesystem;
 
 constexpr float n = std::numeric_limits<float>::quiet_NaN ( );
 
-int main678 ( ) {
+int main ( ) {
 
     std::vector<float> v{ n, 5, n, 9, 25, n, 6, 7, 71, 15, 9, n, n, 2, 7, n, 1, 18, n, 91, n };
+
+    std::sort ( std::begin ( v ), std::end ( v ) );
+
+    for ( auto i : v )
+        std::cout << i << ", ";
+    std::cout << nl;
+
+    return EXIT_SUCCESS;
 
     auto it_nan     = std::find_if ( std::begin ( v ), std::end ( v ), [] ( auto f ) { return std::isnan ( f ); } );
     auto it_non_nan = std::find_if ( std::rbegin ( v ), std::rend ( v ), [] ( auto f ) { return not std::isnan ( f ); } );
@@ -82,7 +90,7 @@ int main678 ( ) {
     return EXIT_SUCCESS;
 }
 
-int main ( ) {
+int main678678 ( ) {
 
     // std::vector<sax::Point2f> points{ { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<sax::Point2f> points{ { 1, 3 }, { 10, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },

@@ -354,8 +354,10 @@ struct Tree2D {
         const_pointer const point_ptr = nn_pointer ( point );
         if ( *point_ptr != point ) {
             auto const inner_nodes_num = m_data.size ( ) / 2 - 1;
-            if ( ++m_size > m_data.size ( ) )
+            if ( ++m_size > m_data.size ( ) ) {
                 m_data.resize ( capacity ( m_size ) );
+                m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
+            }
             auto const it_nan = std::find_if ( std::begin ( m_data ) + inner_nodes_num, std::end ( m_data ),
                                                [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
             *it_nan           = std::move ( point );
@@ -366,24 +368,23 @@ struct Tree2D {
         }
     }
 
-    private:
-    void nans_to_back ( ) noexcept {
-        auto it_nan     = std::find_if ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
-                                     [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
-        auto it_non_nan = std::find_if ( std::rbegin ( m_data ), std::rend ( m_data ),
-                                         [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
-        while ( &*it_nan < &*it_non_nan ) {
-            std::swap ( *it_nan, *it_non_nan );
-            it_nan = std::find_if ( it_nan, std::end ( m_data ), [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
-            it_non_nan = std::find_if ( std::rbegin ( m_data ), it_non_nan + 1,
-                                        [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
-        }
-    }
-
-    public:
     void rebalance ( ) noexcept {
         if ( m_size > detail::linear_bound ) {
-            nans_to_back ( );
+            {
+                // Move invalid points to the back.
+                auto it_nan     = std::find_if ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
+                                             [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+                auto it_non_nan = std::find_if ( std::rbegin ( m_data ), std::rend ( m_data ),
+                                                 [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+                while ( &*it_nan < &*it_non_nan ) {
+                    std::swap ( *it_nan, *it_non_nan );
+                    it_nan =
+                        std::find_if ( it_nan, std::end ( m_data ), [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+                    it_non_nan = std::find_if ( std::rbegin ( m_data ), it_non_nan + 1,
+                                                [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+                }
+            }
+            // Re-balance.
             switch ( get_dimensions_order ( std::begin ( m_data ), std::begin ( m_data ) + m_size ) ) {
                 case 0:
                     kd_construct_xy ( m_data.data ( ), std::begin ( m_data ), std::begin ( m_data ) + m_size );
