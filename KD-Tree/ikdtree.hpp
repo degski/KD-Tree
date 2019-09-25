@@ -334,6 +334,8 @@ struct Tree2D {
     mutable value_type m_to;
     mutable dist_type m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
 
+    container m_recently_added;
+
     public:
     Tree2D ( ) noexcept {}
     Tree2D ( Tree2D const & rhs_ ) :
@@ -348,52 +350,68 @@ struct Tree2D {
     [[nodiscard]] std::size_t size ( ) noexcept { return m_size; }
     [[nodiscard]] std::size_t capacity ( ) noexcept { return m_data.size ( ); }
 
+    private:
+    [[nodiscard]] const_pointer nn_pointer_no_rebalance ( value_type const & point_ ) const noexcept {
+        m_to                   = point_;
+        m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
+        ( this->*nn_search ) ( m_data.data ( ) );
+        return m_point;
+    }
+
+    public:
     template<typename... Args>
-    [[maybe_unused]] iterator emplace ( Args &&... args_ ) noexcept {
-        value_type point              = { std::forward<Args &&> ( args_ )... };
-        const_pointer const point_ptr = nn_pointer ( point );
-        if ( *point_ptr != point ) {
-            auto const inner_nodes_num = m_data.size ( ) / 2 - 1;
-            if ( ++m_size > m_data.size ( ) ) {
-                m_data.resize ( capacity ( m_size ) );
-                m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
-            }
-            auto const it_nan = std::find_if ( std::begin ( m_data ) + inner_nodes_num, std::end ( m_data ),
-                                               [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
-            *it_nan           = std::move ( point );
-            return it_nan;
-        }
-        else {
-            return std::begin ( m_data ) + ( point_ptr - m_data.data ( ) );
-        }
+    void emplace ( Args &&... args_ ) noexcept {
+        value_type point = { std::forward<Args &&> ( args_ )... };
+        if ( std::end ( m_recently_added ) ==
+             std::find ( std::begin ( m_recently_added ), std::end ( m_recently_added ), point ) ) // If not recently added.
+            if ( *nn_pointer_no_rebalance ( point ) != point )                                     // If not already in tree.
+                m_recently_added.emplace_back ( std::move ( point ) );
     }
 
     void rebalance ( ) noexcept {
         if ( m_size > detail::linear_bound ) {
-            {
-                // Move invalid points to the back.
-                auto it_nan     = std::find_if ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
-                                             [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
-                auto it_non_nan = std::find_if ( std::rbegin ( m_data ), std::rend ( m_data ),
-                                                 [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
-                while ( &*it_nan < &*it_non_nan ) {
-                    std::swap ( *it_nan, *it_non_nan );
-                    it_nan =
-                        std::find_if ( it_nan, std::end ( m_data ), [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
-                    it_non_nan = std::find_if ( std::rbegin ( m_data ), it_non_nan + 1,
-                                                [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+            if ( m_recently_added.size ( ) ) {
+                {
+                    // Grow container, iff required.
+                    auto const skip_higher = m_data.size ( ) / 2 - 1;
+                    m_size += m_recently_added.size ( );
+                    if ( m_size > m_data.size ( ) ) {
+                        m_data.resize ( capacity ( m_size ) );
+                        m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
+                    }
+                    // Fill invalid points with recent emplacements.
+                    auto it_nan = std::find_if ( std::begin ( m_data ) + skip_higher, std::end ( m_data ),
+                                                 [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+                    while ( m_recently_added.size ( ) ) {
+                        *it_nan = m_recently_added.back ( );
+                        m_recently_added.pop_back ( );
+                        it_nan = std::find_if ( it_nan, std::end ( m_data ),
+                                                [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+                    }
+                    // Move invalid points to the back.
+                    auto it_non_nan = std::find_if ( std::rbegin ( m_data ), std::rend ( m_data ),
+                                                     [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+                    while ( &*it_nan < &*it_non_nan ) {
+                        std::swap ( *it_nan, *it_non_nan );
+                        it_nan     = std::find_if ( it_nan, std::end ( m_data ),
+                                                [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+                        it_non_nan = std::find_if ( std::rbegin ( m_data ), it_non_nan + 1,
+                                                    [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+                    }
                 }
-            }
-            // Re-balance.
-            switch ( get_dimensions_order ( std::begin ( m_data ), std::begin ( m_data ) + m_size ) ) {
-                case 0:
-                    kd_construct_xy ( m_data.data ( ), std::begin ( m_data ), std::begin ( m_data ) + m_size );
-                    nn_search = &Tree2D::nn_search_xy;
-                    break;
-                case 1:
-                    kd_construct_yx ( m_data.data ( ), std::begin ( m_data ), std::begin ( m_data ) + m_size );
-                    nn_search = &Tree2D::nn_search_yx;
-                    break;
+                {
+                    // Re-balance.
+                    switch ( get_dimensions_order ( std::begin ( m_data ), std::begin ( m_data ) + m_size ) ) {
+                        case 0:
+                            kd_construct_xy ( m_data.data ( ), std::begin ( m_data ), std::begin ( m_data ) + m_size );
+                            nn_search = &Tree2D::nn_search_xy;
+                            break;
+                        case 1:
+                            kd_construct_yx ( m_data.data ( ), std::begin ( m_data ), std::begin ( m_data ) + m_size );
+                            nn_search = &Tree2D::nn_search_yx;
+                            break;
+                    }
+                }
             }
         }
     }
@@ -467,6 +485,7 @@ struct Tree2D {
     }
 
     [[nodiscard]] const_pointer nn_pointer ( value_type const & point_ ) const noexcept {
+        rebalance ( );
         m_to                   = point_;
         m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
         ( this->*nn_search ) ( m_data.data ( ) );
@@ -508,7 +527,7 @@ struct Tree2D {
         assert ( i_ > 0 );
         return i_ > detail::linear_bound ? detail::next_power_2 ( i_ + 1 ) - 1 : i_;
     }
-};
+}; // namespace sax
 
 /*
 

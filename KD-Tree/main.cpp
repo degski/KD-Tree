@@ -62,7 +62,7 @@ namespace fs = std::filesystem;
 
 constexpr float n = std::numeric_limits<float>::quiet_NaN ( );
 
-int main ( ) {
+int main6786 ( ) {
 
     std::vector<float> v{ n, 5, n, 9, 25, n, 6, 7, 71, 15, 9, n, n, 2, 7, n, 1, 18, n, 91, n };
 
@@ -90,8 +90,9 @@ int main ( ) {
     return EXIT_SUCCESS;
 }
 
-int main678678 ( ) {
+int main ( ) {
 
+    std::cout << sizeof ( sax::Tree2D<float> ) << nl;
     // std::vector<sax::Point2f> points{ { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
     std::vector<sax::Point2f> points{ { 1, 3 }, { 10, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
                                       { 6, 8 }, { 7, 4 },  { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
