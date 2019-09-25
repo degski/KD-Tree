@@ -36,7 +36,7 @@
 namespace sax {
 namespace detail {
 
-constexpr std::size_t linear_bound = 44u;
+constexpr std::size_t linear_bound = 1u;
 
 template<typename>
 struct signed_double_width_integer {};
@@ -152,7 +152,7 @@ struct Point2 {
 
     template<typename Stream>
     [[maybe_unused]] friend Stream & operator<< ( Stream & out_, Point2 const & p_ ) noexcept {
-        if ( std::numeric_limits<value_type>::quiet_NaN ( ) != p_.x )
+        if ( not std::isnan ( p_.x ) )
             out_ << '<' << p_.x << ' ' << p_.y << '>';
         else
             out_ << "<* *>";
@@ -197,7 +197,7 @@ struct Point3 {
 
     template<typename Stream>
     [[maybe_unused]] friend Stream & operator<< ( Stream & out_, Point3 const & p_ ) noexcept {
-        if ( std::numeric_limits<value_type>::quiet_NaN ( ) != p_.x )
+        if ( not std::isnan ( p_.x ) )
             out_ << '<' << p_.x << ' ' << p_.y << ' ' << p_.z << '>';
         else
             out_ << "<* * *>";
