@@ -62,31 +62,39 @@ namespace fs = std::filesystem;
 
 int main ( ) {
 
-    std::vector<sax::Point2f> points { { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    // std::vector<sax::Point2f> points{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
-    //                                  { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
+    // std::vector<sax::Point2f> points{ { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
+    std::vector<sax::Point2f> points{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
+                                      { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
 
-    for ( auto p : points ) {
+    for ( auto p : points )
         std::cout << p;
-    }
     std::cout << nl;
 
-    sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
+    sax::Tree2D<float> tree ( std::move ( points ) );
 
-    //sax::Tree2D<float> tree{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
-     //                        { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
+    // sax::Tree2D<float> tree{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
+    //                        { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
 
     std::cout << nl << tree << nl << nl;
 
-    sax::Point2f ptf{ 7.6f, 7.9f };
+    sax::Point2f ptf{ 1.1f, 7.9f };
 
-    std::cout << nl << nl << "nearest " << nl << *tree.nn_pointer ( ptf ) << nl;
+    std::cout << nl << nl << "nearest " << nl << *tree.nn_pointer ( ptf ) << nl << nl;
 
-    std::cout << nl;
-
-    for ( auto p : points ) {
+    for ( auto p : tree )
         std::cout << sax::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
-    }
+
+    /*
+    tree.emplace ( 1.0f, 8.0f );
+
+    std::cout << nl << tree << nl << nl;
+
+    tree.rebalance ( );
+
+    std::cout << nl << tree << nl << nl;
+
+    std::cout << nl << nl << "nearest " << nl << *tree.nn_pointer ( ptf ) << nl << nl;
+    */
 
     return EXIT_SUCCESS;
 }
