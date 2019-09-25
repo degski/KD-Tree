@@ -29,6 +29,7 @@
 #include <cstdlib>
 
 #include <limits>
+#include <sax/iostream.hpp>
 #include <type_traits>
 
 #include <sax/stl.hpp>
@@ -130,8 +131,8 @@ struct Point2 {
     Point2 ( Point2 && ) noexcept      = default;
     Point2 ( value_type && x_, value_type && y_ ) noexcept : x{ std::move ( x_ ) }, y{ std::move ( y_ ) } {}
 
-    template<typename SfmlVec>
-    Point2 ( SfmlVec && v_ ) noexcept : x{ std::move ( v_.x ) }, y{ std::move ( v_.y ) } {}
+    // template<typename SfmlVec>
+    // Point2 ( SfmlVec && v_ ) noexcept : x{ std::move ( v_.x ) }, y{ std::move ( v_.y ) } {}
 
     [[maybe_unused]] Point2 & operator= ( Point2 const & ) noexcept = default;
     [[maybe_unused]] Point2 & operator= ( Point2 && ) noexcept = default;
@@ -173,8 +174,8 @@ struct Point3 {
     Point3 ( value_type && x_, value_type && y_, value_type && z_ ) noexcept :
         x{ std::move ( x_ ) }, y{ std::move ( y_ ) }, z{ std::move ( z_ ) } {}
 
-    template<typename SfmlVec>
-    Point3 ( SfmlVec && v_ ) noexcept : x{ std::move ( v_.x ) }, y{ std::move ( v_.y ) }, z{ std::move ( v_.z ) } {}
+    //  template<typename SfmlVec>
+    //  Point3 ( SfmlVec && v_ ) noexcept : x{ std::move ( v_.x ) }, y{ std::move ( v_.y ) }, z{ std::move ( v_.z ) } {}
 
     [[maybe_unused]] Point3 & operator= ( Point3 const & ) noexcept = default;
     [[maybe_unused]] Point3 & operator= ( Point3 && ) noexcept = default;
@@ -349,24 +350,47 @@ struct Tree2D {
 
     template<typename... Args>
     [[maybe_unused]] iterator emplace ( Args &&... args_ ) noexcept {
-        auto const inner_nodes_num = m_data.size ( ) / 2 - 1;
-        if ( ++m_size > m_data.size ( ) )
-            m_data.resize ( capacity ( m_size ) );
-        auto const it = std::find_if ( std::begin ( m_data ) + inner_nodes_num, std::end ( m_data ),
-                                       [] ( auto const & p ) { return std::isnan ( p.x ); } );
-        *it           = { std::forward<Args &&> ( args_ )... };
-        return it;
+        value_type point              = { std::forward<Args &&> ( args_ )... };
+        const_pointer const point_ptr = nn_pointer ( point );
+        if ( *point_ptr != point ) {
+            auto const inner_nodes_num = m_data.size ( ) / 2 - 1;
+            if ( ++m_size > m_data.size ( ) )
+                m_data.resize ( capacity ( m_size ) );
+            auto const it_nan = std::find_if ( std::begin ( m_data ) + inner_nodes_num, std::end ( m_data ),
+                                               [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+            *it_nan           = std::move ( point );
+            return it_nan;
+        }
+        else {
+            return std::begin ( m_data ) + ( point_ptr - m_data.data ( ) );
+        }
     }
 
+    private:
+    void nans_to_back ( ) noexcept {
+        auto it_nan     = std::find_if ( std::begin ( m_data ) + m_data.size ( ) / 2 - 1, std::end ( m_data ),
+                                     [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+        auto it_non_nan = std::find_if ( std::rbegin ( m_data ), std::rend ( m_data ),
+                                         [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+        while ( &*it_nan < &*it_non_nan ) {
+            std::swap ( *it_nan, *it_non_nan );
+            it_nan = std::find_if ( it_nan, std::end ( m_data ), [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+            it_non_nan = std::find_if ( std::rbegin ( m_data ), it_non_nan + 1,
+                                        [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+        }
+    }
+
+    public:
     void rebalance ( ) noexcept {
         if ( m_size > detail::linear_bound ) {
-            switch ( get_dimensions_order ( std::begin ( m_data ), std::end ( m_data ) ) ) {
+            nans_to_back ( );
+            switch ( get_dimensions_order ( std::begin ( m_data ), std::begin ( m_data ) + m_size ) ) {
                 case 0:
-                    kd_construct_xy ( m_data.data ( ), std::begin ( m_data ), std::end ( m_data ) );
+                    kd_construct_xy ( m_data.data ( ), std::begin ( m_data ), std::begin ( m_data ) + m_size );
                     nn_search = &Tree2D::nn_search_xy;
                     break;
                 case 1:
-                    kd_construct_yx ( m_data.data ( ), std::begin ( m_data ), std::end ( m_data ) );
+                    kd_construct_yx ( m_data.data ( ), std::begin ( m_data ), std::begin ( m_data ) + m_size );
                     nn_search = &Tree2D::nn_search_yx;
                     break;
             }
@@ -502,7 +526,8 @@ struct Tree2D {
 
     using container_type = Type;
     using container =
-        std::conditional_t<std::is_same_v<container_type, array_tag_t>, std::array<P, detail::array_size<N> ( )>, std::vector<P>>;
+        std::conditional_t<std::is_same_v<container_type, array_tag_t>, std::array<P, detail::array_size<N> ( )>,
+std::vector<P>>;
 
     using iterator       = typename container::iterator;
     using const_iterator = typename container::const_iterator;
@@ -520,7 +545,8 @@ struct Tree2D {
     [[nodiscard]] pointer left ( pointer const p_ ) const noexcept { return ( p_ + 1 ) + ( p_ - m_data.data ( ) ); }
     [[nodiscard]] pointer right ( pointer const p_ ) const noexcept { return ( p_ + 2 ) + ( p_ - m_data.data ( ) ); }
     [[nodiscard]] const_pointer left ( const_pointer const p_ ) const noexcept { return ( p_ + 1 ) + ( p_ - m_data.data ( ) ); }
-    [[nodiscard]] const_pointer right ( const_pointer const p_ ) const noexcept { return ( p_ + 2 ) + ( p_ - m_data.data ( ) ); }
+    [[nodiscard]] const_pointer right ( const_pointer const p_ ) const noexcept { return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
+}
 
     [[nodiscard]] bool is_leaf ( const_pointer const p_ ) const noexcept {
         return m_leaf_start < p_ or std::isnan ( left ( p_ )->x );

@@ -60,11 +60,33 @@ namespace fs = std::filesystem;
 #define likely( x ) __builtin_expect ( !!( x ), 1 )
 #define unlikely( x ) __builtin_expect ( !!( x ), 0 )
 
+constexpr float n = std::numeric_limits<float>::quiet_NaN ( );
+
+int main678 ( ) {
+
+    std::vector<float> v{ n, 5, n, 9, 25, n, 6, 7, 71, 15, 9, n, n, 2, 7, n, 1, 18, n, 91, n };
+
+    auto it_nan     = std::find_if ( std::begin ( v ), std::end ( v ), [] ( auto f ) { return std::isnan ( f ); } );
+    auto it_non_nan = std::find_if ( std::rbegin ( v ), std::rend ( v ), [] ( auto f ) { return not std::isnan ( f ); } );
+
+    while ( &*it_nan < &*it_non_nan ) {
+        std::swap ( *it_nan, *it_non_nan );
+        it_nan     = std::find_if ( it_nan, std::end ( v ), [] ( auto f ) { return std::isnan ( f ); } );
+        it_non_nan = std::find_if ( std::rbegin ( v ), it_non_nan + 1, [] ( auto f ) { return not std::isnan ( f ); } );
+    }
+
+    for ( auto i : v )
+        std::cout << i << ", ";
+    std::cout << nl;
+
+    return EXIT_SUCCESS;
+}
+
 int main ( ) {
 
     // std::vector<sax::Point2f> points{ { 2, 3 }, { 5, 4 }, { 9, 6 }, { 4, 7 }, { 8, 1 }, { 7, 2 } };
-    std::vector<sax::Point2f> points{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
-                                      { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
+    std::vector<sax::Point2f> points{ { 1, 3 }, { 10, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
+                                      { 6, 8 }, { 7, 4 },  { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
 
     for ( auto p : points )
         std::cout << p;
@@ -72,7 +94,7 @@ int main ( ) {
 
     sax::Tree2D<float> tree ( std::move ( points ) );
 
-    // sax::Tree2D<float> tree{ { 1, 3 }, { 1, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
+    // sax::Tree2D<float> tree{ { 1, 3 }, { 10, 8 }, { 2, 2 }, { 2, 10 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
     //                        { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 },  { 8, 5 }, { 9, 9 } };
 
     std::cout << nl << tree << nl << nl;
@@ -84,17 +106,15 @@ int main ( ) {
     for ( auto p : tree )
         std::cout << sax::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
 
-    /*
-    tree.emplace ( 1.0f, 8.0f );
-
-    std::cout << nl << tree << nl << nl;
-
+    tree.emplace ( 2.0f, 9.0f );
     tree.rebalance ( );
 
     std::cout << nl << tree << nl << nl;
 
     std::cout << nl << nl << "nearest " << nl << *tree.nn_pointer ( ptf ) << nl << nl;
-    */
+
+    for ( auto p : tree )
+        std::cout << sax::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
 
     return EXIT_SUCCESS;
 }
@@ -188,7 +208,7 @@ bool test ( int const n_ ) {
     points.reserve ( n_ );
     for ( int i = 0; i < n_; ++i )
         points.emplace_back ( disx ( rng ), disy ( rng ) );
-    sax::ikdtree<float, 2> tree ( std::begin ( points ), std::end ( points ) );
+    sax::ikdtree<float, 2> tree ( points );
     for ( int i = 0, m = n_ / 1'000; i < m; ++i ) {
         sax::Point2f const ptf{ disx ( rng ), disy ( rng ) }, kdt{ *tree.nn_pointer ( ptf ) },
             ls{ *nn_search_linear ( std::begin ( points ), std::end ( points ), ptf ) };
