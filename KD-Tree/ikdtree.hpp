@@ -214,7 +214,7 @@ using Point3d = Point3<double>;
 
 struct vector_tag_t {};
 struct array_tag_t {};
-
+/*
 // Implicit KD full binary tree of dimension 2.
 template<typename T, typename P = Point2<T>>
 struct Tree2D {
@@ -257,6 +257,7 @@ struct Tree2D {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [] ( value_type const & a, value_type const & b ) { return a.x < b.x; } );
         std::swap ( *p_, *median );
+        std::cout << "x " << *this << nl;
         if ( first_ != median ) {
             kd_construct_yx ( left ( p_ ), first_, median );
             if ( ++median != last_ )
@@ -268,6 +269,7 @@ struct Tree2D {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
         std::nth_element ( first_, median, last_, [] ( value_type const & a, value_type const & b ) { return a.y < b.y; } );
         std::swap ( *p_, *median );
+        std::cout << "y " << *this << nl;
         if ( first_ != median ) {
             kd_construct_xy ( left ( p_ ), first_, median );
             if ( ++median != last_ )
@@ -533,7 +535,7 @@ struct Tree2D {
     }
 }; // namespace sax
 
-/*
+*/
 
 // Implicit KD full binary tree of dimension 2.
 template<typename T, typename P = Point2<T>, typename Type = vector_tag_t, std::size_t N = 0>
@@ -550,8 +552,7 @@ struct Tree2D {
 
     using container_type = Type;
     using container =
-        std::conditional_t<std::is_same_v<container_type, array_tag_t>, std::array<P, detail::array_size<N> ( )>,
-std::vector<P>>;
+        std::conditional_t<std::is_same_v<container_type, array_tag_t>, std::array<P, detail::array_size<N> ( )>, std::vector<P>>;
 
     using iterator       = typename container::iterator;
     using const_iterator = typename container::const_iterator;
@@ -569,8 +570,7 @@ std::vector<P>>;
     [[nodiscard]] pointer left ( pointer const p_ ) const noexcept { return ( p_ + 1 ) + ( p_ - m_data.data ( ) ); }
     [[nodiscard]] pointer right ( pointer const p_ ) const noexcept { return ( p_ + 2 ) + ( p_ - m_data.data ( ) ); }
     [[nodiscard]] const_pointer left ( const_pointer const p_ ) const noexcept { return ( p_ + 1 ) + ( p_ - m_data.data ( ) ); }
-    [[nodiscard]] const_pointer right ( const_pointer const p_ ) const noexcept { return ( p_ + 2 ) + ( p_ - m_data.data ( ) );
-}
+    [[nodiscard]] const_pointer right ( const_pointer const p_ ) const noexcept { return ( p_ + 2 ) + ( p_ - m_data.data ( ) ); }
 
     [[nodiscard]] bool is_leaf ( const_pointer const p_ ) const noexcept {
         return m_leaf_start < p_ or std::isnan ( left ( p_ )->x );
@@ -639,8 +639,8 @@ std::vector<P>>;
     }
 
     void nn_search_linear ( const_pointer const ) const noexcept {
-        for ( auto const & v : m_data ) {
-            auto const d = distance_squared ( m_to, v );
+        for ( value_type const & v : m_data ) {
+            dist_type const d = distance_squared ( m_to, v );
             if ( d < m_min_distance_squared ) {
                 m_point                = &v;
                 m_min_distance_squared = d;
@@ -835,7 +835,6 @@ std::vector<P>>;
         return i_ > detail::linear_bound ? detail::next_power_2 ( i_ + 1 ) - 1 : i_;
     }
 };
-*/
 
 // Implicit KD full binary tree of dimension 3.
 template<typename T, typename P = Point3<T>, typename Type = vector_tag_t, std::size_t N = 0>
@@ -1076,8 +1075,8 @@ struct Tree3D {
     }
 
     void nn_search_linear ( const_pointer const ) const noexcept {
-        for ( auto const & v : m_data ) {
-            auto const d = distance_squared ( m_to, v );
+        for ( value_type const & v : m_data ) {
+            dist_type const d = distance_squared ( m_to, v );
             if ( d < m_min_distance_squared ) {
                 m_point                = &v;
                 m_min_distance_squared = d;
