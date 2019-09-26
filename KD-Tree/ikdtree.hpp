@@ -315,8 +315,8 @@ struct Tree2D {
     }
 
     void nn_search_linear ( const_pointer const ) const noexcept {
-        for ( auto const & v : m_data ) {
-            auto const d = distance_squared ( v, m_to );
+        for ( value_type const & v : m_data ) {
+            dist_type const d = distance_squared ( v, m_to );
             if ( d < m_min_distance_squared ) {
                 m_point                = &v;
                 m_min_distance_squared = d;
@@ -328,13 +328,12 @@ struct Tree2D {
     std::size_t m_size;
     const_pointer m_leaf_start = nullptr;
     void ( Tree2D::*nn_search ) ( const_pointer const ) const noexcept;
+    container m_recently_added;
 
     // These mutable types are class global result types.
     mutable const_pointer m_point = nullptr;
     mutable value_type m_to;
     mutable dist_type m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
-
-    container m_recently_added;
 
     public:
     Tree2D ( ) noexcept {}
@@ -350,21 +349,19 @@ struct Tree2D {
     [[nodiscard]] std::size_t size ( ) noexcept { return m_size; }
     [[nodiscard]] std::size_t capacity ( ) noexcept { return m_data.size ( ); }
 
-    private:
-    [[nodiscard]] value_type const & nn_pointer_no_rebalance ( value_type const & point_ ) const noexcept {
+    [[nodiscard]] bool contains ( value_type const & point_ ) const noexcept {
         m_to                   = point_;
         m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
         ( this->*nn_search ) ( m_data.data ( ) );
-        return *m_point;
+        return *m_point == point_;
     }
 
-    public:
     template<typename... Args>
     void emplace ( Args &&... args_ ) noexcept {
         value_type point = { std::forward<Args &&> ( args_ )... };
         if ( std::end ( m_recently_added ) ==
              std::find ( std::begin ( m_recently_added ), std::end ( m_recently_added ), point ) ) // If not recently added.
-            if ( nn_pointer_no_rebalance ( point ) != point )                                     // If not already in tree.
+            if ( not contains ( point ) )                                                          // If not already in tree.
                 m_recently_added.emplace_back ( std::move ( point ) );
     }
 
@@ -374,11 +371,15 @@ struct Tree2D {
                 {
                     // Grow container, iff required.
                     auto const skip_higher = m_data.size ( ) / 2 - 1;
+                    std::cout << "size " << m_size << nl;
                     m_size += m_recently_added.size ( );
+                    std::cout << "size " << m_size << nl;
                     if ( m_size > m_data.size ( ) ) {
+                        std::cout << "resizing" << nl;
                         m_data.resize ( capacity ( m_size ) );
                         m_leaf_start = m_data.data ( ) + m_data.size ( ) / 2 - 1;
                     }
+                    std::cout << *this << nl;
                     // Fill invalid points with recent emplacements.
                     auto it_nan = std::find_if ( std::begin ( m_data ) + skip_higher, std::end ( m_data ),
                                                  [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
@@ -388,15 +389,19 @@ struct Tree2D {
                         it_nan = std::find_if ( it_nan, std::end ( m_data ),
                                                 [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
                     }
-                    // Move invalid points to the back.
-                    auto it_non_nan = std::find_if ( std::rbegin ( m_data ), std::rend ( m_data ),
-                                                     [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
-                    while ( &*it_nan < &*it_non_nan ) {
-                        std::swap ( *it_nan, *it_non_nan );
-                        it_nan     = std::find_if ( it_nan, std::end ( m_data ),
-                                                [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
-                        it_non_nan = std::find_if ( std::rbegin ( m_data ), it_non_nan + 1,
-                                                    [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+                    std::cout << *this << nl;
+                    if ( it_nan < std::prev ( std::end (
+                                      m_data ) ) ) { // Check if invalid points (that is not already at the back) are present.
+                        // Move invalid points to the back.
+                        auto it_non_nan = std::find_if ( std::rbegin ( m_data ), std::rend ( m_data ),
+                                                         [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+                        while ( &*it_nan < &*it_non_nan ) {
+                            std::swap ( *it_nan, *it_non_nan );
+                            it_nan     = std::find_if ( it_nan, std::end ( m_data ),
+                                                    [] ( auto const & p ) noexcept { return std::isnan ( p.x ); } );
+                            it_non_nan = std::find_if ( std::rbegin ( m_data ), it_non_nan + 1,
+                                                        [] ( auto const & p ) noexcept { return not std::isnan ( p.x ); } );
+                        }
                     }
                 }
                 {

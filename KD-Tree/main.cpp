@@ -60,6 +60,16 @@ namespace fs = std::filesystem;
 #define likely( x ) __builtin_expect ( !!( x ), 1 )
 #define unlikely( x ) __builtin_expect ( !!( x ), 0 )
 
+void handleEptr ( std::exception_ptr eptr ) { // Passing by value is ok.
+    try {
+        if ( eptr )
+            std::rethrow_exception ( eptr );
+    }
+    catch ( const std::exception & e ) {
+        std::cout << "Caught exception \"" << e.what ( ) << "\"\n";
+    }
+}
+
 constexpr float n = std::numeric_limits<float>::quiet_NaN ( );
 
 int main6786 ( ) {
@@ -116,6 +126,12 @@ int main ( ) {
         std::cout << sax::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
 
     tree.emplace ( 2.0f, 9.0f );
+    tree.emplace ( 2.0f, 8.0f );
+    tree.emplace ( 2.0f, 7.0f );
+    tree.emplace ( 2.0f, 6.0f );
+
+    std::cout << "rebalance starting" << nl;
+
     tree.rebalance ( );
 
     std::cout << nl << tree << nl << nl;
@@ -126,16 +142,6 @@ int main ( ) {
         std::cout << sax::Tree2D<float>::distance_squared ( p, ptf ) << ' ' << p << nl;
 
     return EXIT_SUCCESS;
-}
-
-void handleEptr ( std::exception_ptr eptr ) { // Passing by value is ok.
-    try {
-        if ( eptr )
-            std::rethrow_exception ( eptr );
-    }
-    catch ( const std::exception & e ) {
-        std::cout << "Caught exception \"" << e.what ( ) << "\"\n";
-    }
 }
 
 template<typename T>
