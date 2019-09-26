@@ -316,7 +316,7 @@ struct Tree2D {
 
     void nn_search_linear ( const_pointer const ) const noexcept {
         for ( auto const & v : m_data ) {
-            auto const d = distance_squared ( m_to, v );
+            auto const d = distance_squared ( v, m_to );
             if ( d < m_min_distance_squared ) {
                 m_point                = &v;
                 m_min_distance_squared = d;
@@ -351,11 +351,11 @@ struct Tree2D {
     [[nodiscard]] std::size_t capacity ( ) noexcept { return m_data.size ( ); }
 
     private:
-    [[nodiscard]] const_pointer nn_pointer_no_rebalance ( value_type const & point_ ) const noexcept {
+    [[nodiscard]] value_type const & nn_pointer_no_rebalance ( value_type const & point_ ) const noexcept {
         m_to                   = point_;
         m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
         ( this->*nn_search ) ( m_data.data ( ) );
-        return m_point;
+        return *m_point;
     }
 
     public:
@@ -364,7 +364,7 @@ struct Tree2D {
         value_type point = { std::forward<Args &&> ( args_ )... };
         if ( std::end ( m_recently_added ) ==
              std::find ( std::begin ( m_recently_added ), std::end ( m_recently_added ), point ) ) // If not recently added.
-            if ( *nn_pointer_no_rebalance ( point ) != point )                                     // If not already in tree.
+            if ( nn_pointer_no_rebalance ( point ) != point )                                     // If not already in tree.
                 m_recently_added.emplace_back ( std::move ( point ) );
     }
 
@@ -485,7 +485,6 @@ struct Tree2D {
     }
 
     [[nodiscard]] const_pointer nn_pointer ( value_type const & point_ ) const noexcept {
-        rebalance ( );
         m_to                   = point_;
         m_min_distance_squared = std::numeric_limits<dist_type>::max ( );
         ( this->*nn_search ) ( m_data.data ( ) );
