@@ -49,6 +49,7 @@ namespace fs = std::filesystem;
 
 #include <sax/prng_jsf.hpp>
 #include <sax/splitmix.hpp>
+#include <sax/stl.hpp>
 #include <sax/uniform_int_distribution.hpp>
 
 #include <plf/plf_nanotimer.h>
@@ -59,6 +60,12 @@ namespace fs = std::filesystem;
 
 #define likely( x ) __builtin_expect ( !!( x ), 1 )
 #define unlikely( x ) __builtin_expect ( !!( x ), 0 )
+
+// C++ implementation of worst case linear time algorithm
+// to find k'th smallest element
+#include <algorithm>
+#include <climits>
+#include <iostream>
 
 void handleEptr ( std::exception_ptr eptr ) { // Passing by value is ok.
     try {
@@ -72,7 +79,7 @@ void handleEptr ( std::exception_ptr eptr ) { // Passing by value is ok.
 
 constexpr float n = std::numeric_limits<float>::quiet_NaN ( );
 
-int main6786 ( ) {
+int main ( ) {
 
     std::vector<float> v{ n, 5, n, 9, 25, n, 6, 7, 71, 15, 9, n, n, 2, 7, n, 1, 18, n, 91, n };
 
@@ -118,7 +125,7 @@ y <7 4><2 2><6 8><4 1><8 2><5 4><8 5><9 8><2 9><9 9><7 7><* *><1 3><3 6><* *>
 <7 4><2 2><6 8><4 1><8 2><5 4><8 5><9 8><2 9><9 9><7 7><* *><1 3><3 6><* *>
 */
 
-int main ( ) {
+int main678678 ( ) {
     std::vector<sax::Point2f> points{ { 1, 3 }, { 9, 8 }, { 2, 2 }, { 2, 9 }, { 3, 6 }, { 4, 1 }, { 5, 4 },
                                       { 6, 8 }, { 7, 4 }, { 7, 7 }, { 8, 2 }, { 8, 5 }, { 9, 9 } };
     sax::Tree2D<float> tree ( std::begin ( points ), std::end ( points ) );
@@ -1182,7 +1189,7 @@ struct Tree2D {
     template<typename random_it>
     void kd_construct_xy ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
-        std::nth_element ( first_, median, last_, [ ] ( value_type const & a, value_type const & b ) { return a.x < b.x; } );
+        std::nth_element_ ( first_, median, last_, [ ] ( value_type const & a, value_type const & b ) { return a.x < b.x; } );
         *p_ = *median;
         if ( first_ != median ) {
             kd_construct_yx ( left ( p_ ), first_, median );
@@ -1196,7 +1203,7 @@ struct Tree2D {
     template<typename random_it>
     void kd_construct_yx ( const pointer p_, random_it first_, random_it last_ ) noexcept {
         random_it median = std::next ( first_, std::distance ( first_, last_ ) / 2 );
-        std::nth_element ( first_, median, last_, [ ] ( value_type const & a, value_type const & b ) { return a.y < b.y; } );
+        std::nth_element_ ( first_, median, last_, [ ] ( value_type const & a, value_type const & b ) { return a.y < b.y; } );
         *p_ = *median;
         if ( first_ != median ) {
             kd_construct_xy ( left ( p_ ), first_, median );
