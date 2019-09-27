@@ -67,6 +67,187 @@ namespace fs = std::filesystem;
 #include <climits>
 #include <iostream>
 
+template<typename T>
+inline T median_of_five ( T const * const p ) noexcept {
+    return p[ 1 ] < p[ 0 ]
+               ? p[ 3 ] < p[ 2 ]
+                     ? p[ 1 ] < p[ 3 ]
+                           ? p[ 0 ] < p[ 4 ]
+                                 ? p[ 0 ] < p[ 3 ] ? p[ 4 ] < p[ 3 ] ? p[ 4 ] : p[ 3 ] : p[ 2 ] < p[ 0 ] ? p[ 2 ] : p[ 0 ]
+                                 : p[ 4 ] < p[ 3 ] ? p[ 0 ] < p[ 3 ] ? p[ 0 ] : p[ 3 ] : p[ 2 ] < p[ 4 ] ? p[ 2 ] : p[ 4 ]
+                           : p[ 2 ] < p[ 4 ]
+                                 ? p[ 1 ] < p[ 2 ] ? p[ 0 ] < p[ 2 ] ? p[ 0 ] : p[ 2 ] : p[ 4 ] < p[ 1 ] ? p[ 4 ] : p[ 1 ]
+                                 : p[ 1 ] < p[ 4 ] ? p[ 0 ] < p[ 4 ] ? p[ 0 ] : p[ 4 ] : p[ 2 ] < p[ 1 ] ? p[ 2 ] : p[ 1 ]
+                     : p[ 1 ] < p[ 2 ]
+                           ? p[ 0 ] < p[ 4 ]
+                                 ? p[ 0 ] < p[ 2 ] ? p[ 4 ] < p[ 2 ] ? p[ 4 ] : p[ 2 ] : p[ 3 ] < p[ 0 ] ? p[ 3 ] : p[ 0 ]
+                                 : p[ 4 ] < p[ 2 ] ? p[ 0 ] < p[ 2 ] ? p[ 0 ] : p[ 2 ] : p[ 3 ] < p[ 4 ] ? p[ 3 ] : p[ 4 ]
+                           : p[ 3 ] < p[ 4 ]
+                                 ? p[ 1 ] < p[ 3 ] ? p[ 0 ] < p[ 3 ] ? p[ 0 ] : p[ 3 ] : p[ 4 ] < p[ 1 ] ? p[ 4 ] : p[ 1 ]
+                                 : p[ 1 ] < p[ 4 ] ? p[ 0 ] < p[ 4 ] ? p[ 0 ] : p[ 4 ] : p[ 3 ] < p[ 1 ] ? p[ 3 ] : p[ 1 ]
+               : p[ 3 ] < p[ 2 ]
+                     ? p[ 0 ] < p[ 3 ]
+                           ? p[ 1 ] < p[ 4 ]
+                                 ? p[ 1 ] < p[ 3 ] ? p[ 4 ] < p[ 3 ] ? p[ 4 ] : p[ 3 ] : p[ 2 ] < p[ 1 ] ? p[ 2 ] : p[ 1 ]
+                                 : p[ 4 ] < p[ 3 ] ? p[ 1 ] < p[ 3 ] ? p[ 1 ] : p[ 3 ] : p[ 2 ] < p[ 4 ] ? p[ 2 ] : p[ 4 ]
+                           : p[ 2 ] < p[ 4 ]
+                                 ? p[ 0 ] < p[ 2 ] ? p[ 1 ] < p[ 2 ] ? p[ 1 ] : p[ 2 ] : p[ 4 ] < p[ 0 ] ? p[ 4 ] : p[ 0 ]
+                                 : p[ 0 ] < p[ 4 ] ? p[ 1 ] < p[ 4 ] ? p[ 1 ] : p[ 4 ] : p[ 2 ] < p[ 0 ] ? p[ 2 ] : p[ 0 ]
+                     : p[ 0 ] < p[ 2 ]
+                           ? p[ 1 ] < p[ 4 ]
+                                 ? p[ 1 ] < p[ 2 ] ? p[ 4 ] < p[ 2 ] ? p[ 4 ] : p[ 2 ] : p[ 3 ] < p[ 1 ] ? p[ 3 ] : p[ 1 ]
+                                 : p[ 4 ] < p[ 2 ] ? p[ 1 ] < p[ 2 ] ? p[ 1 ] : p[ 2 ] : p[ 3 ] < p[ 4 ] ? p[ 3 ] : p[ 4 ]
+                           : p[ 3 ] < p[ 4 ] ? p[ 0 ] < p[ 3 ] ? p[ 1 ] < p[ 3 ] ? p[ 1 ] : p[ 3 ]
+                                                               : p[ 4 ] < p[ 0 ] ? p[ 4 ] : p[ 0 ]
+                                             : p[ 0 ] < p[ 4 ] ? p[ 1 ] < p[ 4 ] ? p[ 1 ] : p[ 4 ]
+                                                               : p[ 3 ] < p[ 0 ] ? p[ 3 ] : p[ 0 ];
+}
+
+template<typename T>
+std::vector<T> reserve ( std::size_t s ) {
+    std::vector<T> v;
+    v.reserve ( s );
+    return v;
+}
+
+template<typename random_it, typename compare = std::less<typename random_it::value_type>>
+void nth_element_ ( random_it first, random_it nth, random_it last, compare comp = compare{} ) {
+    auto const d = std::distance ( first, last );
+    if ( d <= 1 )
+        return;
+    auto const i                                        = nth - first + 1;
+    std::vector<typename random_it::value_type> medians = reserve<typename random_it::value_type> ( d / 5 + 1 );
+    auto l                                              = last - d % 5;
+    for ( auto p = &*first, lp = &*l; p < lp; p += 5 )
+        medians.push_back ( median_of_five ( p ) );
+    std::sort ( l, last, comp );
+    medians.push_back ( *( l + ( last - l - 1 ) / 2 ) );
+    nth_element_ ( std::begin ( medians ), std::begin ( medians ) + ( medians.size ( ) - 1 ) / 2, std::end ( medians ), comp );
+    auto medians_median = medians[ ( medians.size ( ) - 1 ) / 2 ];
+    auto medians_median_it =
+        std::partition ( first, last, [comp, medians_median] ( int x ) noexcept { return comp ( x, medians_median ); } );
+    std::partition ( medians_median_it, last, [comp, medians_median] ( int x ) noexcept {
+        return ( not comp ( x, medians_median ) and not comp ( medians_median, x ) );
+    } );
+    auto const k = medians_median_it - first + 1;
+    if ( i < k )
+        nth_element_ ( first, nth, medians_median_it, comp );
+    else if ( i > k )
+        nth_element_ ( std::next ( medians_median_it ), nth, last, comp );
+}
+
+std::vector<int> rvec ( std::size_t s_ ) {
+    static sax::Rng rng{ sax::fixed_seed ( ) };
+    std::vector<int> v;
+    v.reserve ( s_ );
+    std::generate_n ( sax::back_emplacer ( v ), s_, [] ( ) { return rng ( ); } );
+    return v;
+}
+
+int main ( ) {
+
+    auto v = rvec ( 100'000 );
+
+    auto median = std::next ( std::begin ( v ), std::distance ( std::begin ( v ), std::end ( v ) ) / 2 );
+
+    plf::nanotimer timer;
+    timer.start ( );
+
+    nth_element_ ( std::begin ( v ), median, std::end ( v ) );
+
+    std::uint64_t time = static_cast<std::uint64_t> ( timer.get_elapsed_us ( ) );
+
+    std::cout << *median << ' ' << time << nl;
+
+    return EXIT_SUCCESS;
+}
+
+#if 0
+
+using namespace std;
+
+int partition ( int arr[], int l, int r, int k );
+
+// A simple function to find median of arr[].  This is called
+// only for an array of size 5 in this program.
+int findMedian ( int arr[], int n ) {
+    std::sort ( arr, arr + n ); // Sort the array
+    return arr[ n / 2 ];        // Return middle element
+}
+
+// Returns k'th smallest element in arr[l..r] in worst case
+// linear time. ASSUMPTION: ALL ELEMENTS IN ARR[] ARE DISTINCT
+int kthSmallest ( int arr[], int l, int r, int k ) {
+    // If k is smaller than number of elements in array
+    if ( k > 0 && k <= r - l + 1 ) {
+        int n = r - l + 1; // Number of elements in arr[l..r]
+
+        // Divide arr[] in groups of size 5, calculate median
+        // of every group and store it in median[] array.
+        int i, median[ ( n + 4 ) / 5 ]; // There will be floor((n+4)/5) groups;
+        for ( i = 0; i < n / 5; i++ )
+            median[ i ] = findMedian ( arr + l + i * 5, 5 );
+        if ( i * 5 < n ) // For last group with less than 5 elements
+        {
+            median[ i ] = findMedian ( arr + l + i * 5, n % 5 );
+            i++;
+        }
+
+        // Find median of all medians using recursive call.
+        // If median[] has only one element, then no need
+        // of recursive call
+        int medOfMed = ( i == 1 ) ? median[ i - 1 ] : kthSmallest ( median, 0, i - 1, i / 2 );
+
+        // Partition the array around a random element and
+        // get position of pivot element in sorted array
+        int pos = partition ( arr, l, r, medOfMed );
+
+        // If position is same as k
+        if ( pos - l == k - 1 )
+            return arr[ pos ];
+        if ( pos - l > k - 1 ) // If position is more, recur for left
+            return kthSmallest ( arr, l, pos - 1, k );
+
+        // Else recur for right subarray
+        return kthSmallest ( arr, pos + 1, r, k - pos + l - 1 );
+    }
+
+    // If k is more than number of elements in array
+    return INT_MAX;
+}
+
+// It searches for x in arr[l..r], and partitions the array
+// around x.
+int partition ( int arr[], int l, int r, int x ) {
+    // Search for x in arr[l..r] and move it to end
+    int i;
+    for ( i = l; i < r; i++ )
+        if ( arr[ i ] == x )
+            break;
+    std::swap ( arr[ i ], arr[ r ] );
+
+    // Standard partition algorithm
+    i = l;
+    for ( int j = l; j <= r - 1; j++ ) {
+        if ( arr[ j ] <= x ) {
+            std::swap ( arr[ i ], arr[ j ] );
+            i++;
+        }
+    }
+    std::swap ( arr[ i ], arr[ r ] );
+    return i;
+}
+
+// Driver program to test above methods
+int main ( ) {
+    int arr[] = { 7, 10, 4, 3, 20, 15 };
+    int n = sizeof ( arr ) / sizeof ( arr[ 0 ] ), k = 3;
+    std::cout << "K'th smallest element is " << kthSmallest ( arr, 0, n - 1, k ) << nl;
+    return EXIT_SUCCESS;
+}
+
+#endif
+
 void handleEptr ( std::exception_ptr eptr ) { // Passing by value is ok.
     try {
         if ( eptr )
@@ -79,7 +260,7 @@ void handleEptr ( std::exception_ptr eptr ) { // Passing by value is ok.
 
 constexpr float n = std::numeric_limits<float>::quiet_NaN ( );
 
-int main ( ) {
+int main6786 ( ) {
 
     std::vector<float> v{ n, 5, n, 9, 25, n, 6, 7, 71, 15, 9, n, n, 2, 7, n, 1, 18, n, 91, n };
 
